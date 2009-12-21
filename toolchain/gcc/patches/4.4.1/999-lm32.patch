@@ -20,9 +20,9 @@ Index: libgcc/config.host
 +        extra_parts="crtbegin.o crtend.o crti.o crtn.o"
 +        tmake_file="lm32/t-elf"
 +	;;
-+lm32-*-uclinux*)
++lm32-*-linux*)
 +        extra_parts="crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o"
-+        tmake_file="lm32/t-uclinux"
++        tmake_file="lm32/t-linux"
 +	;;	
  m32r-*-elf*|m32r-*-rtems*)
   	;;
@@ -44,10 +44,10 @@ Index: libgcc/config/lm32/t-elf
 +
 +CRTSTUFF_T_CFLAGS = -G 0
 +TARGET_LIBGCC2_CFLAGS = -G 0
-Index: libgcc/config/lm32/t-uclinux
+Index: libgcc/config/lm32/t-linux
 ===================================================================
---- libgcc/config/lm32/t-uclinux	(revision 0)
-+++ libgcc/config/lm32/t-uclinux	(revision 0)
+--- libgcc/config/lm32/t-linux	(revision 0)
++++ libgcc/config/lm32/t-linux	(revision 0)
 @@ -0,0 +1,2 @@
 +CRTSTUFF_T_CFLAGS = -fPIC
 +TARGET_LIBGCC2_CFLAGS = -fPIC
@@ -111,8 +111,8 @@ Index: gcc/config.gcc
 +        tmake_file="lm32/t-lm32"
 +	tmake_file="${tmake_file} lm32/t-fprules-softfp soft-fp/t-softfp"
 +        ;;
-+lm32-*-uclinux*)
-+        tm_file="dbxelf.h elfos.h ${tm_file} linux.h lm32/uclinux-elf.h"
++lm32-*-linux*)
++        tm_file="dbxelf.h elfos.h ${tm_file} linux.h lm32/linux-elf.h"
 +        tmake_file="lm32/t-lm32"
 +	tmake_file="${tmake_file} lm32/t-fprules-softfp soft-fp/t-softfp"
 +        ;;
@@ -185,10 +185,10 @@ Index: gcc/config/lm32/sfp-machine.h
 +# define strong_alias(name, aliasname) _strong_alias(name, aliasname)
 +# define _strong_alias(name, aliasname) \
 +  extern __typeof (name) aliasname __attribute__ ((alias (#name)));
-Index: gcc/config/lm32/uclinux-elf.h
+Index: gcc/config/lm32/linux-elf.h
 ===================================================================
---- gcc/config/lm32/uclinux-elf.h	(revision 0)
-+++ gcc/config/lm32/uclinux-elf.h	(revision 0)
+--- gcc/config/lm32/linux-elf.h	(revision 0)
++++ gcc/config/lm32/linux-elf.h	(revision 0)
 @@ -0,0 +1,85 @@
 +/* Definitions for LM32 running Linux-based GNU systems using ELF
 +   Copyright (C) 1993, 1994, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
