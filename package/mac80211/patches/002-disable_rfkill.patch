@@ -1,0 +1,14 @@
+--- a/config.mk
++++ b/config.mk
+@@ -421,8 +421,8 @@ endif
+ # We need the backported rfkill module on kernel < 2.6.31.
+ # In more recent kernel versions use the in kernel rfkill module.
+ ifdef CONFIG_COMPAT_WIRELESS_31
+-CONFIG_RFKILL_BACKPORT=m
+-CONFIG_RFKILL_BACKPORT_LEDS=y
+-CONFIG_RFKILL_BACKPORT_INPUT=y
++# CONFIG_RFKILL_BACKPORT=m
++# CONFIG_RFKILL_BACKPORT_LEDS=y
++# CONFIG_RFKILL_BACKPORT_INPUT=y
+ endif
+ 
