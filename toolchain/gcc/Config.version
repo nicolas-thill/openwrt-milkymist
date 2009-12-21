@@ -70,6 +70,7 @@ if !LINUX_2_4
 		default y if arm || armeb
 
 	config GCC_VERSION_4_4_1
+		default y if lm32
 		default y if ubicom32
 		default y if TARGET_octeon
 endif
