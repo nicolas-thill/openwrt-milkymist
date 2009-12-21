@@ -1,0 +1,16 @@
+9
+
+dir
+0
+svn+ssh://openwrt@svn.openwrt.org/openwrt/trunk/target/linux/generic-2.6/patches-2.6.23
+svn+ssh://openwrt@svn.openwrt.org/openwrt
+add
+
+
+
+
+
+
+
+svn:special svn:externals svn:needs-lock
+
