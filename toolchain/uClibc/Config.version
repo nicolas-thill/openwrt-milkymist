@@ -5,3 +5,7 @@ config UCLIBC_VERSION
 	default "0.9.30.1"     if UCLIBC_VERSION_0_9_30_1
 	default "0.9.30+nptl"  if UCLIBC_VERSION_NPTL
 	default "0.9.30.1"
+
+config UCLIBC_VERSION_0_9_29
+	default y if lm32
+
