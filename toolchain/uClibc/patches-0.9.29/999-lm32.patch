@@ -24,8 +24,8 @@ diff -ruN uClibc-0.9.29/extra/Configs/Config.in uClibc-0.9.29-lm32/extra/Configs
  endif
 diff -ruN uClibc-0.9.29/extra/Configs/Config.lm32 uClibc-0.9.29-lm32/extra/Configs/Config.lm32
 --- uClibc-0.9.29/extra/Configs/Config.lm32	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/extra/Configs/Config.lm32	2009-12-22 02:10:13.000000000 +0100
-@@ -0,0 +1,23 @@
++++ uClibc-0.9.29-lm32/extra/Configs/Config.lm32	2009-12-22 06:19:10.000000000 +0100
+@@ -0,0 +1,19 @@
 +#
 +# For a description of the syntax of this configuration file,
 +# see extra/config/Kconfig-language.txt
@@ -44,10 +44,6 @@ diff -ruN uClibc-0.9.29/extra/Configs/Config.lm32 uClibc-0.9.29-lm32/extra/Confi
 +	select HAVE_NO_PIC
 +
 +config ARCH_CFLAGS
-+	string
-+	default ""
-+
-+config CROSS
 +	string
 diff -ruN uClibc-0.9.29/extra/Configs/defconfigs/lm32 uClibc-0.9.29-lm32/extra/Configs/defconfigs/lm32
 --- uClibc-0.9.29/extra/Configs/defconfigs/lm32	1970-01-01 01:00:00.000000000 +0100
