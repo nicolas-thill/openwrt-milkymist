@@ -1030,13 +1030,13 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crt1.S uClibc-0.9.29-lm32/libc/s
 +	.weak data_start
 +	data_start = __data_start
 +
-+
++/* do not do any good and cause linking to fail
 +	.globl _data_rel_start
 +_data_rel_start:
 +	.word __data_rel_start
 +	.globl _data_rel_end
 +_data_rel_end:
-+	.word __data_rel_end
++	.word __data_rel_end*/
 +
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crti.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crti.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/crti.S	1970-01-01 01:00:00.000000000 +0100
