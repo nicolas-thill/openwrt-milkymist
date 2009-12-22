@@ -74,6 +74,7 @@ config SSP_SUPPORT
 config INSTALL_LIBSTDCPP
 	bool
 	prompt "Build/install c++ compiler and libstdc++?" if TOOLCHAINOPTS
+	default n if lm32
 	default y
 	help
 	    Build/install c++ compiler and libstdc++?
