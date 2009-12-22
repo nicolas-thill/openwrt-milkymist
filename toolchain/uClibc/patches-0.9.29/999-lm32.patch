@@ -1,6 +1,6 @@
 diff -ruN uClibc-0.9.29/extra/Configs/Config.in uClibc-0.9.29-lm32/extra/Configs/Config.in
 --- uClibc-0.9.29/extra/Configs/Config.in	2007-04-17 19:24:29.000000000 +0200
-+++ uClibc-0.9.29-lm32/extra/Configs/Config.in	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/extra/Configs/Config.in	2009-12-22 04:45:24.000000000 +0100
 @@ -43,6 +43,9 @@
  config TARGET_ia64
  	bool "ia64"
@@ -11,9 +11,20 @@ diff -ruN uClibc-0.9.29/extra/Configs/Config.in uClibc-0.9.29-lm32/extra/Configs
  config TARGET_m68k
  	bool "m68k"
  
+@@ -128,6 +131,10 @@
+ source "extra/Configs/Config.ia64"
+ endif
+ 
++if TARGET_lm32
++source "extra/Configs/Config.lm32"
++endif
++
+ if TARGET_m68k
+ source "extra/Configs/Config.m68k"
+ endif
 diff -ruN uClibc-0.9.29/extra/Configs/Config.lm32 uClibc-0.9.29-lm32/extra/Configs/Config.lm32
 --- uClibc-0.9.29/extra/Configs/Config.lm32	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/extra/Configs/Config.lm32	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/extra/Configs/Config.lm32	2009-12-22 02:10:13.000000000 +0100
 @@ -0,0 +1,23 @@
 +#
 +# For a description of the syntax of this configuration file,
@@ -40,24 +51,12 @@ diff -ruN uClibc-0.9.29/extra/Configs/Config.lm32 uClibc-0.9.29-lm32/extra/Confi
 +	string
 diff -ruN uClibc-0.9.29/extra/Configs/defconfigs/lm32 uClibc-0.9.29-lm32/extra/Configs/defconfigs/lm32
 --- uClibc-0.9.29/extra/Configs/defconfigs/lm32	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/extra/Configs/defconfigs/lm32	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/extra/Configs/defconfigs/lm32	2009-12-22 02:10:13.000000000 +0100
 @@ -0,0 +1 @@
 +TARGET_lm32=y
-diff -ruN uClibc-0.9.29/extra/locale/Makefile.in uClibc-0.9.29-lm32/extra/locale/Makefile.in
---- uClibc-0.9.29/extra/locale/Makefile.in	2006-08-24 05:55:55.000000000 +0200
-+++ uClibc-0.9.29-lm32/extra/locale/Makefile.in	2009-12-21 20:10:43.000000000 +0100
-@@ -145,7 +145,7 @@
- ifeq ($(UCLIBC_PREGENERATED_LOCALE_DATA),y)
- 
- $(locale_SRC): $(locale_OUT)/$(LOCALE_DATA_FILENAME)
--	zcat $< | tar -xv -C $(dir $@) -f -
-+	cat $< |gunzip| tar -xv -C $(dir $@) -f -
- 	touch $@
- 	# we use the one in locale_DIR
- 	#$(RM) $(locale_OUT)/locale_mmap.h
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/common/getpagesize.c uClibc-0.9.29-lm32/libc/sysdeps/linux/common/getpagesize.c
 --- uClibc-0.9.29/libc/sysdeps/linux/common/getpagesize.c	2006-03-10 17:20:23.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/common/getpagesize.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/common/getpagesize.c	2009-12-22 02:10:13.000000000 +0100
 @@ -19,6 +19,7 @@
  #include <unistd.h>
  #include <features.h>
@@ -68,7 +67,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/common/getpagesize.c uClibc-0.9.29-lm
  
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/endian.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/endian.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/endian.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/endian.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/endian.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,7 @@
 +/* Lattice Mico32 (lm32) is big-endian.  */
 +
@@ -79,7 +78,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/endian.h uClibc-0.9.29-lm32
 +#define __BYTE_ORDER __BIG_ENDIAN
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/fcntl.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/fcntl.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/fcntl.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/fcntl.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/fcntl.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,227 @@
 +/* O_*, F_*, FD_* bit values for Linux.
 +   Copyright (C) 2000, 2004 Free Software Foundation, Inc.
@@ -310,7 +309,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/fcntl.h uClibc-0.9.29-lm32/
 +__END_DECLS
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_stat.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/kernel_stat.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_stat.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/kernel_stat.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/kernel_stat.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,62 @@
 +#ifndef _BITS_STAT_STRUCT_H
 +#define _BITS_STAT_STRUCT_H
@@ -376,7 +375,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_stat.h uClibc-0.9.29
 +#endif	/*  _BITS_STAT_STRUCT_H */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_types.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/kernel_types.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_types.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/kernel_types.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/kernel_types.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,44 @@
 +/* Note that we use the exact same include guard #define names
 + * as asm/posix_types.h.  This will avoid gratuitous conflicts 
@@ -424,7 +423,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_types.h uClibc-0.9.2
 +#endif /* __ARCH_LM32_POSIX_TYPES_H */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/mman.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/mman.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/mman.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/mman.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/mman.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,106 @@
 +/* Definitions for POSIX memory map interface.  Linux/MIPS version.
 +   Copyright (C) 1997, 2000, 2003, 2004, 2005, 2006
@@ -534,7 +533,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/mman.h uClibc-0.9.29-lm32/l
 +#endif
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/setjmp.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/setjmp.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/setjmp.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/setjmp.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/setjmp.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,55 @@
 +/* Define the machine-dependent type `jmp_buf'.  MIPS version.
 +   Copyright (C) 1992,93,95,97,2000 Free Software Foundation, Inc.
@@ -593,7 +592,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/setjmp.h uClibc-0.9.29-lm32
 +#endif	/* bits/setjmp.h */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/stackinfo.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/stackinfo.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/stackinfo.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/stackinfo.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/stackinfo.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,28 @@
 +/* Copyright (C) 1999 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -625,7 +624,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/stackinfo.h uClibc-0.9.29-l
 +#endif	/* stackinfo.h */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/syscalls.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/syscalls.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/syscalls.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/syscalls.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/syscalls.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,122 @@
 +#ifndef _BITS_SYSCALLS_H
 +#define _BITS_SYSCALLS_H
@@ -751,7 +750,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/syscalls.h uClibc-0.9.29-lm
 +
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,42 @@
 +/*
 + * Track misc arch-specific features that aren't config options
@@ -797,7 +796,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h uCli
 +#endif /* _BITS_UCLIBC_ARCH_FEATURES_H */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_page.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/uClibc_page.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_page.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/uClibc_page.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/uClibc_page.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,9 @@
 +#ifndef _UCLIBC_PAGE_H
 +#define _UCLIBC_PAGE_H
@@ -810,7 +809,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_page.h uClibc-0.9.29
 +
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/wordsize.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/wordsize.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/wordsize.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/wordsize.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bits/wordsize.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,19 @@
 +/* Copyright (C) 1999 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -833,7 +832,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/wordsize.h uClibc-0.9.29-lm
 +#define __WORDSIZE	32
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/brk.c uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/brk.c
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/brk.c	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/brk.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/brk.c	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,31 @@
 +#include <errno.h>
 +#include <unistd.h>
@@ -868,7 +867,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/brk.c uClibc-0.9.29-lm32/libc/sy
 +libc_hidden_def(brk)
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-_setjmp.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bsd-_setjmp.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-_setjmp.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bsd-_setjmp.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bsd-_setjmp.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,10 @@
 +/* This just does a tail-call to `__sigsetjmp (ARG, 0)'.
 +   We cannot do it in C because it must be a tail-call, so frame-unwinding
@@ -882,7 +881,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-_setjmp.S uClibc-0.9.29-lm32
 +	be	r0, r0, __sigsetjmp
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-setjmp.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bsd-setjmp.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-setjmp.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bsd-setjmp.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/bsd-setjmp.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,11 @@
 +/* This just does a tail-call to `__sigsetjmp (ARG, 1)'.
 +   We cannot do it in C because it must be a tail-call, so frame-unwinding
@@ -897,7 +896,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-setjmp.S uClibc-0.9.29-lm32/
 +
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/clone.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/clone.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/clone.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/clone.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/clone.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,44 @@
 +#define _ERRNO_H
 +#include <features.h>
@@ -945,7 +944,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/clone.S uClibc-0.9.29-lm32/libc/
 +#endif
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crt1.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crt1.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/crt1.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crt1.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crt1.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,96 @@
 +/* This is the canonical entry point, usually the first thing in the text
 +   segment.  We use expect this to be set up as follows on the call:
@@ -1045,7 +1044,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crt1.S uClibc-0.9.29-lm32/libc/s
 +
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crti.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crti.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/crti.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crti.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crti.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,18 @@
 +
 +	/* Copied from gcc */
@@ -1067,7 +1066,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crti.S uClibc-0.9.29-lm32/libc/s
 +        sw      (sp+4), ra
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crtn.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crtn.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/crtn.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crtn.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/crtn.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,13 @@
 +	/* Copied from gcc */
 +
@@ -1084,7 +1083,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/crtn.S uClibc-0.9.29-lm32/libc/s
 +        ret
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/__longjmp.c uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/__longjmp.c
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/__longjmp.c	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/__longjmp.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/__longjmp.c	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,59 @@
 +#include <features.h>
 +#include <setjmp.h>
@@ -1147,7 +1146,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/__longjmp.c uClibc-0.9.29-lm32/l
 +}  
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/Makefile
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/Makefile	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/Makefile	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,13 @@
 +# Makefile for uClibc
 +#
@@ -1164,7 +1163,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile uClibc-0.9.29-lm32/libc
 +include $(top_srcdir)Makerules
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile.arch uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/Makefile.arch
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile.arch	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/Makefile.arch	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/Makefile.arch	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,12 @@
 +# Makefile for uClibc
 +#
@@ -1180,7 +1179,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile.arch uClibc-0.9.29-lm32
 +include $(top_srcdir)libc/sysdeps/linux/Makefile.commonarch
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/mmap.c uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/mmap.c
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/mmap.c	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/mmap.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/mmap.c	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,27 @@
 +#include <errno.h>
 +#include <unistd.h>
@@ -1211,7 +1210,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/mmap.c uClibc-0.9.29-lm32/libc/s
 +libc_hidden_def (mmap)
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp_aux.c uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/setjmp_aux.c
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp_aux.c	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/setjmp_aux.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/setjmp_aux.c	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,64 @@
 +/* Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1279,7 +1278,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp_aux.c uClibc-0.9.29-lm32/
 +}
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/setjmp.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/setjmp.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/setjmp.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,35 @@
 +/* Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1318,7 +1317,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp.S uClibc-0.9.29-lm32/libc
 +	.size	__sigsetjmp,.-__sigsetjmp
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/procfs.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/procfs.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/procfs.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/procfs.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/procfs.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,111 @@
 +/* Copyright (C) 1996, 1997, 1999, 2001 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1433,7 +1432,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/procfs.h uClibc-0.9.29-lm32/
 +#endif	/* sys/procfs.h */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ptrace.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/ptrace.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ptrace.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/ptrace.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/ptrace.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,151 @@
 +/*
 + * Based on:
@@ -1588,7 +1587,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ptrace.h uClibc-0.9.29-lm32/
 +#endif /* _SYS_PTRACE_H */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ucontext.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/ucontext.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ucontext.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/ucontext.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/ucontext.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,128 @@
 +/* Copyright (C) 1998, 1999, 2001, 2006 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1720,7 +1719,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ucontext.h uClibc-0.9.29-lm3
 +#endif /* sys/ucontext.h */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/user.h uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/user.h
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/user.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/user.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/sys/user.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,30 @@
 +/* Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1754,7 +1753,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/user.h uClibc-0.9.29-lm32/li
 +#endif  /* sys/user.h */
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/syscall.c uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/syscall.c
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/syscall.c	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/syscall.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/syscall.c	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,31 @@
 +#include <features.h>
 +#include <errno.h>
@@ -1789,7 +1788,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/syscall.c uClibc-0.9.29-lm32/lib
 +}
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/__syscall_error.c uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/__syscall_error.c
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/__syscall_error.c	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/__syscall_error.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/__syscall_error.c	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,18 @@
 +/* Wrapper for setting errno.
 + *
@@ -1811,7 +1810,7 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/__syscall_error.c uClibc-0.9.29-
 +}
 diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/vfork.S uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/vfork.S
 --- uClibc-0.9.29/libc/sysdeps/linux/lm32/vfork.S	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/vfork.S	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libc/sysdeps/linux/lm32/vfork.S	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,27 @@
 +#include <features.h>
 +
@@ -1840,26 +1839,9 @@ diff -ruN uClibc-0.9.29/libc/sysdeps/linux/lm32/vfork.S uClibc-0.9.29-lm32/libc/
 +.size __vfork,.-__vfork
 +weak_alias(__vfork,vfork)
 +libc_hidden_weak(vfork)
-diff -ruN uClibc-0.9.29/libpthread/linuxthreads.old/Makefile.in uClibc-0.9.29-lm32/libpthread/linuxthreads.old/Makefile.in
---- uClibc-0.9.29/libpthread/linuxthreads.old/Makefile.in	2007-03-19 10:49:04.000000000 +0100
-+++ uClibc-0.9.29-lm32/libpthread/linuxthreads.old/Makefile.in	2009-12-21 20:10:43.000000000 +0100
-@@ -112,10 +112,10 @@
- 	$(do_ar)
- 
- linuxthreads_headers:
--	$(Q)$(LN) -sf ../$(PTDIR)/sysdeps/pthread/pthread.h $(top_builddir)include/
--	$(Q)$(LN) -sf ../$(PTDIR)/semaphore.h $(top_builddir)include/
-+	$(Q)$(LN) -sf $(PTDIR)/sysdeps/pthread/pthread.h $(top_builddir)include/
-+	$(Q)$(LN) -sf $(PTDIR)/semaphore.h $(top_builddir)include/
- 	$(Q)$(INSTALL) -d $(top_builddir)include/bits
--	$(Q)$(LN) -sf ../../$(PTDIR)/sysdeps/pthread/bits/pthreadtypes.h $(top_builddir)include/bits/
-+	$(Q)$(LN) -sf $(PTDIR)/sysdeps/pthread/bits/pthreadtypes.h $(top_builddir)include/bits/
- 
- linuxthreads_headers_clean:
- 	$(RM) $(top_builddir)include/pthread.h $(top_builddir)include/semaphore.h \
 diff -ruN uClibc-0.9.29/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h uClibc-0.9.29-lm32/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h
 --- uClibc-0.9.29/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h	1970-01-01 01:00:00.000000000 +0100
-+++ uClibc-0.9.29-lm32/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h	2009-12-22 02:10:14.000000000 +0100
 @@ -0,0 +1,61 @@
 +/* Machine-dependent pthreads configuration and inline functions.
 +   nios2 version.
@@ -1922,81 +1904,10 @@ diff -ruN uClibc-0.9.29/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h uC
 +register char * stack_pointer __asm__ ("sp");
 +
 +#endif /* pt-machine.h */
-diff -ruN uClibc-0.9.29/libpthread/Makefile uClibc-0.9.29-lm32/libpthread/Makefile
---- uClibc-0.9.29/libpthread/Makefile	2005-11-21 17:15:55.000000000 +0100
-+++ uClibc-0.9.29-lm32/libpthread/Makefile	2009-12-21 20:10:43.000000000 +0100
-@@ -5,8 +5,8 @@
- # Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
- #
- 
--top_srcdir=../
--top_builddir=../
-+top_srcdir=$(shell pwd)/../
-+top_builddir=$(shell pwd)/../
- include $(top_builddir)Rules.mak
- all: libs
- include Makefile.in
-diff -ruN uClibc-0.9.29/Makefile uClibc-0.9.29-lm32/Makefile
---- uClibc-0.9.29/Makefile	2005-11-21 17:15:55.000000000 +0100
-+++ uClibc-0.9.29-lm32/Makefile	2009-12-21 20:10:43.000000000 +0100
-@@ -5,9 +5,18 @@
- # Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
- #
- 
--top_srcdir=./
--top_builddir=./
-+TARGET_ARCH=$(ARCH)
-+
-+top_srcdir=$(shell pwd)/
-+top_builddir=$(shell pwd)/
- #include $(top_builddir)Rules.mak
- #all: libs
- include Makefile.in
- include $(top_srcdir)Makerules
-+
-+.PHONY: romfs
-+
-+# romfs target does nothing as we have no libs to install as we are only
-+# statically linked
-+romfs:
-+
-diff -ruN uClibc-0.9.29/Makefile.in uClibc-0.9.29-lm32/Makefile.in
---- uClibc-0.9.29/Makefile.in	2007-03-19 10:49:04.000000000 +0100
-+++ uClibc-0.9.29-lm32/Makefile.in	2009-12-21 20:10:43.000000000 +0100
-@@ -12,7 +12,7 @@
- 	defconfig allyesconfig allnoconfig clean distclean \
- 	release dist tags
- 
--include $(top_builddir)Rules.mak
-+include Rules.mak
- sub_headers := headers
- 
- ifeq ($(HAVE_DOT_CONFIG),y)
 diff -ruN uClibc-0.9.29/Rules.mak uClibc-0.9.29-lm32/Rules.mak
 --- uClibc-0.9.29/Rules.mak	2007-04-17 15:34:11.000000000 +0200
-+++ uClibc-0.9.29-lm32/Rules.mak	2009-12-21 20:10:43.000000000 +0100
-@@ -16,6 +16,9 @@
- # file named ".config".  Don't mess with this file unless
- # you know what you are doing.
- 
-+#-----------------------------------------------------------
-+# the following comment cannot be true
-+#-----------------------------------------------------------
- 
- #-----------------------------------------------------------
- # If you are running a cross compiler, you will want to set
-@@ -64,8 +67,8 @@
- endif
- 
- # Make certain these contain a final "/", but no "//"s.
--TARGET_ARCH:=$(shell grep -s '^TARGET_ARCH' $(top_builddir)/.config | sed -e 's/^TARGET_ARCH=//' -e 's/"//g')
--TARGET_ARCH:=$(strip $(subst ",, $(strip $(TARGET_ARCH))))
-+#TARGET_ARCH:=$(shell grep -s '^TARGET_ARCH' $(top_builddir)/.config | sed -e 's/^TARGET_ARCH=//' -e 's/"//g')
-+#TARGET_ARCH:=$(strip $(subst ",, $(strip $(TARGET_ARCH))))
- TARGET_SUBARCH:=$(shell grep -s '^TARGET_SUBARCH' $(top_builddir)/.config | sed -e 's/^TARGET_SUBARCH=//' -e 's/"//g')
- TARGET_SUBARCH:=$(strip $(subst ",, $(strip $(TARGET_SUBARCH))))
- RUNTIME_PREFIX:=$(strip $(subst //,/, $(subst ,/, $(subst ",, $(strip $(RUNTIME_PREFIX))))))
-@@ -154,7 +157,11 @@
++++ uClibc-0.9.29-lm32/Rules.mak	2009-12-22 04:44:45.000000000 +0100
+@@ -154,7 +154,11 @@
  endif
  
  ifeq ($(UCLIBC_FORMAT_FDPIC_ELF),y)
@@ -2009,7 +1920,7 @@ diff -ruN uClibc-0.9.29/Rules.mak uClibc-0.9.29-lm32/Rules.mak
  else
  	PICFLAG:=-fPIC
  endif
-@@ -241,6 +248,13 @@
+@@ -241,6 +245,13 @@
  	CPU_CFLAGS-y+=-m32
  endif
  
@@ -2023,7 +1934,7 @@ diff -ruN uClibc-0.9.29/Rules.mak uClibc-0.9.29-lm32/Rules.mak
  ifeq ($(TARGET_ARCH),sh)
  	OPTIMIZATION+=-fstrict-aliasing
  	OPTIMIZATION+= $(call check_gcc,-mprefergot,)
-@@ -410,7 +424,11 @@
+@@ -410,7 +421,11 @@
  LDFLAGS:=$(LDFLAGS_NOSTRIP) -z defs
  ifeq ($(DODEBUG),y)
  #CFLAGS += -g3
@@ -2037,7 +1948,7 @@ diff -ruN uClibc-0.9.29/Rules.mak uClibc-0.9.29-lm32/Rules.mak
  endif
 diff -ruN uClibc-0.9.29/utils/ldd.c uClibc-0.9.29-lm32/utils/ldd.c
 --- uClibc-0.9.29/utils/ldd.c	2007-04-18 00:31:01.000000000 +0200
-+++ uClibc-0.9.29-lm32/utils/ldd.c	2009-12-21 20:10:43.000000000 +0100
++++ uClibc-0.9.29-lm32/utils/ldd.c	2009-12-22 02:10:14.000000000 +0100
 @@ -77,6 +77,11 @@
  #define ELFCLASSM	ELFCLASS32
  #endif
