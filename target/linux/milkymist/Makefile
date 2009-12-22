@@ -11,7 +11,7 @@ TARGET_CFLAGS+= -DNO_FORK
 
 ARCH:=lm32
 BOARD:=milkymist
-BOARDNAME:=MilkyMist (Lattice Mico32)
+BOARDNAME:=Milkymist (LatticeMico32)
 FEATURES:=nommu ramdisk
 
 LINUX_VERSION:=2.6.23
@@ -21,7 +21,7 @@ include $(INCLUDE_DIR)/target.mk
 KERNEL_MAKEOPTS += LDFLAGS_BUILD_ID=""
 
 define Target/Description
-	Build firmware images for Ubicom based routers and media devices.
+	Build firmware images for the Milkymist open hardware system-on-chip platform.
 endef
 
 $(eval $(call BuildTarget))
