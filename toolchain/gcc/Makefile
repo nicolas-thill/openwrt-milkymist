@@ -147,8 +147,8 @@ GCC_CONFIGURE_STAGE1:= \
 GCC_CONFIGURE_STAGE2:= \
 	$(GCC_CONFIGURE) \
 		--enable-languages=$(TARGET_LANGUAGES) \
-		--enable-shared \
-		--enable-threads \
+		--disable-shared \
+		--disable-threads \
 		--disable-tls \
 		--with-slibdir=$(TOOLCHAIN_DIR)/lib \
 
