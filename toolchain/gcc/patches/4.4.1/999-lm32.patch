@@ -882,7 +882,7 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/linux-elf.h gcc-4.4.1-lm32/gcc/config/lm32/l
 +   %{shared:-lc} \
 +   %{!shared:-lc} "
 +
-+#define LIBGCC_SPEC "-lgcc"
++#define LIBGCC_SPEC "-lc -lgcc"
 +
 +/* Provide a STARTFILE_SPEC appropriate for GNU/Linux.  Here we add
 +   the GNU/Linux magical crtbegin.o file (see crtstuff.c) which
