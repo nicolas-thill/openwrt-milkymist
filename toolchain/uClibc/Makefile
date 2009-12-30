@@ -123,15 +123,18 @@ endef
 
 define Host/Install
 	$(UCLIBC_MAKE) PREFIX= utils
-	$(INSTALL_DIR) $(TOOLCHAIN_DIR)/bin
-	$(INSTALL_DIR) $(TOOLCHAIN_DIR)/usr/bin
-	$(INSTALL_BIN) \
-		$(HOST_BUILD_DIR)/utils/ldd \
-		$(TOOLCHAIN_DIR)/usr/bin/
-	$(INSTALL_DIR) $(TOOLCHAIN_DIR)/sbin
-	$(INSTALL_BIN) \
-		$(HOST_BUILD_DIR)/utils/ldconfig \
-		$(TOOLCHAIN_DIR)/sbin/
+	$(if $(wildcard $(HOST_BUILD_DIR)/utils/ldd), \
+		$(INSTALL_DIR) $(TOOLCHAIN_DIR)/usr/bin ; \
+		$(INSTALL_BIN) \
+			$(HOST_BUILD_DIR)/utils/ldd \
+			$(TOOLCHAIN_DIR)/usr/bin/ \
+	)
+	$(if $(wildcard $(HOST_BUILD_DIR)/utils/ldconfig), \
+		$(INSTALL_DIR) $(TOOLCHAIN_DIR)/sbin ; \
+		$(INSTALL_BIN) \
+			$(HOST_BUILD_DIR)/utils/ldconfig \
+			$(TOOLCHAIN_DIR)/sbin/ \
+	)
 endef
 
 define Host/Clean
