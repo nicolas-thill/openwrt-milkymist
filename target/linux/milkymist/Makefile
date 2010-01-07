@@ -11,7 +11,7 @@ TARGET_CFLAGS+= -DNO_FORK
 
 ARCH:=lm32
 BOARD:=milkymist
-BOARDNAME:=Milkymist (LatticeMico32)
+BOARDNAME:=Milkymist (Lattice Mico32)
 FEATURES:=nommu ramdisk
 
 LINUX_VERSION:=2.6.23
