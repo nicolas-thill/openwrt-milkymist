@@ -1,11 +1,310 @@
-diff -ruN linux-2.6.23/arch/lm32/defconfig linux-2.6.23-lm32/arch/lm32/defconfig
---- linux-2.6.23/arch/lm32/defconfig	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/defconfig	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/Kconfig b/arch/lm32/Kconfig
+new file mode 100644
+index 0000000..48c2fc2
+--- /dev/null
++++ b/arch/lm32/Kconfig
+@@ -0,0 +1,125 @@
++#
++# For a description of the syntax of this configuration file,
++# see Documentation/kbuild/kconfig-language.txt.
++#
++
++mainmenu "uClinux/lattice mico32 Kernel Configuration"
++
++# this setting fixes all other settings we want to have fixed
++config LM32
++	bool
++	default y
++	select CPU_MICO32
++
++config MMU
++	bool
++	default n
++
++config VGA_CONSOLE
++	bool
++	default n
++
++config ZONE_DMA_FLAG
++	int
++	default 0
++
++config GENERIC_IOMAP
++	bool
++	default y
++
++config RWSEM_GENERIC_SPINLOCK
++	bool
++	default y
++
++config GENERIC_FIND_NEXT_BIT
++	bool
++	default y
++
++config GENERIC_HWEIGHT
++	bool
++	default y
++
++config GENERIC_CALIBRATE_DELAY
++	bool
++	default y
++
++config GENERIC_ALLOCATOR
++	bool
++	default y
++
++config GENERIC_BUG
++	bool
++	default y
++
++config GENERIC_HARDIRQS
++	bool
++	default y
++
++config GENERIC_CLOCKEVENTS
++	bool
++	default n
++
++config SELECT_MEMORY_MODEL
++	bool
++	default y
++
++config FLATMEM_MANUAL
++	bool
++	default y
++
++config FLATMEM
++	bool
++	default y
++
++config FLAT_NODE_MEM_MAP
++	bool
++	default y
++
++config FLAT_NODE_MEM_MAP
++	bool
++	default y
++
++config NO_IOPORT
++	bool
++	default y
++
++config GENERIC_HARDIRQS_NO__DO_IRQ
++	bool
++	default y
++
++config APM_EMULATION
++	bool
++	default n
++
++source "init/Kconfig"
++
++source "arch/lm32/Kconfig.cpu"
++
++menu "Executable file formats"
++
++source "fs/Kconfig.binfmt"
++
++endmenu
++
++menu "Power management options"
++
++config PM
++	bool "Power Management support"
++	help
++	  Support processor power management modes
++
++endmenu
++
++source "net/Kconfig"
++
++source "drivers/Kconfig"
++
++source "fs/Kconfig"
++
++source "arch/lm32/Kconfig.debug"
++
++source "security/Kconfig"
++
++source "crypto/Kconfig"
++
++source "lib/Kconfig"
+diff --git a/arch/lm32/Kconfig.cpu b/arch/lm32/Kconfig.cpu
+new file mode 100644
+index 0000000..07b3e4f
+--- /dev/null
++++ b/arch/lm32/Kconfig.cpu
+@@ -0,0 +1,84 @@
++menu "Processor, Board and Features"
++
++choice
++	prompt "LM32 platform"
++	default PLAT_MILKYMIST
++
++config PLAT_MILKYMIST
++	bool "milkymist"
++	help
++	  Milkymist board.
++
++
++endchoice
++
++if (PLAT_MILKYMIST)
++choice
++	prompt "CPU"
++	default CPU_MICO32
++
++config CPU_MICO32
++	bool "mico32"
++	help
++	  Lattice mico32 processor.
++endchoice
++
++choice
++	prompt "Board Selection"
++	default BOARD_XILINX_ML401
++
++config	BOARD_XILINX_ML401
++	bool "Xilinx ML401"
++
++config	BOARD_MILKYMIST_ONE
++	bool "Milkymist One"
++endchoice
++endif
++
++config CPU_CLOCK
++	int "CPU Clock [Hz] (integer)"
++	default "100000000" if BOARD_XILINX_ML401
++	default "100000000" if BOARD_MILKYMIST_ONE
++
++config MEMORY_START
++	hex "Physical memory start address (hex)"
++	default "0x40000000"  if BOARD_XILINX_ML401
++	default "0x40000000"  if BOARD_MILKYMIST_ONE
++
++config MEMORY_SIZE
++	hex "Physical memory size (hex)"
++	default "0x04000000"  if BOARD_XILINX_ML401
++	default "0x04000000"  if BOARD_MILKYMIST_ONE
++
++config TEXT_OFFSET
++	hex "Set the text offset in memory"
++	default "0x40000000"  if BOARD_XILINX_ML401
++	default "0x40000000"  if BOARD_MILKYMIST_ONE
++	help
++	  Define where the kernel will be loaded to and executed from.
++
++config HZ
++	int
++	default 100
++
++config EARLY_PRINTK
++	bool "Early printk"
++	default y
++	help
++	  This option enables special console drivers which allow the kernel
++	  to print messages very early in the bootup process.
++
++	  This is useful for kernel debugging when your machine crashes very
++	  early before the console code is initialized. You should normally
++	        say N here, unless you want to debug.
++
++config LM32_HW_JTAG
++bool "Disable kernel exception handling (enable JTAG debugging)"
++	default n
++	help
++	  This option disables the exception handling within the kernel. It is
++	  required to allow access with the JTAG debugger for kernel-level
++	  debug access.
++
++	  Your should normally say N here, unless you want to debug.
++endmenu
+diff --git a/arch/lm32/Kconfig.debug b/arch/lm32/Kconfig.debug
+new file mode 100644
+index 0000000..cde44a8
+--- /dev/null
++++ b/arch/lm32/Kconfig.debug
+@@ -0,0 +1,13 @@
++menu "Kernel hacking"
++
++source "lib/Kconfig.debug"
++
++config BOOTPARAM
++	bool 'Compiled-in Kernel Boot Parameter'
++
++config BOOTPARAM_STRING
++	string 'Kernel Boot Parameter'
++	default 'console=ttyS0,19200'
++	depends on BOOTPARAM
++
++endmenu
+diff --git a/arch/lm32/Makefile b/arch/lm32/Makefile
+new file mode 100644
+index 0000000..5e5243a
+--- /dev/null
++++ b/arch/lm32/Makefile
+@@ -0,0 +1,51 @@
++#
++# arch/lm32/Makefile
++#
++# (C) Copyright 2007, Theobroma Systems <www.theobroma-systems.com>
++#
++# See file CREDITS for list of people who contributed to this
++# project.
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public License as
++# published by the Free Software Foundation; either version 2 of
++# the License, or (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++# MA 02111-1307 USA
++#
++
++board-$(CONFIG_BOARD_XILINX_ML401)	:= ml401
++board-$(CONFIG_BOARD_MILKYMIST_ONE)	:= milkymist-one
++BOARD := $(board-y)
++
++export BOARD
++
++cflags-y := -mmultiply-enabled -mdivide-enabled \
++	-mbarrel-shift-enabled -msign-extend-enabled
++
++AFLAGS += $(cflags-y)
++
++OBJCOPYFLAGS	:=-O binary -R .note -R .comment -S
++
++CFLAGS += $(cflags-y)
++CFLAGS += -D__linux__
++CFLAGS += -DUTS_SYSNAME=\"uClinux\"
++
++head-y := arch/lm32/kernel/head.o arch/lm32/kernel/init_task.o
++
++core-y	+= arch/lm32/kernel/ arch/lm32/mm/
++libs-y	+= arch/lm32/lib/
++
++vmlinux.bin: vmlinux
++	$(OBJCOPY) $(OBJCOPYFLAGS) $< $@
++
++vmlinux.gz: vmlinux.bin
++	cat $< |gzip >$@
+diff --git a/arch/lm32/defconfig b/arch/lm32/defconfig
+new file mode 100644
+index 0000000..e01ea40
+--- /dev/null
++++ b/arch/lm32/defconfig
 @@ -0,0 +1,646 @@
 +#
 +# Automatically generated make config: don't edit
 +# Linux kernel version: 2.6.23
-+# Mon Nov 16 19:52:45 2009
++# Mon Dec 28 00:47:37 2009
 +#
 +CONFIG_LM32=y
 +# CONFIG_MMU is not set
@@ -273,8 +572,11 @@ diff -ruN linux-2.6.23/arch/lm32/defconfig linux-2.6.23-lm32/arch/lm32/defconfig
 +# CONFIG_PPP_MPPE is not set
 +# CONFIG_PPPOE is not set
 +# CONFIG_PPPOL2TP is not set
-+# CONFIG_SLIP is not set
++CONFIG_SLIP=y
++CONFIG_SLIP_COMPRESSED=y
 +CONFIG_SLHC=y
++# CONFIG_SLIP_SMART is not set
++# CONFIG_SLIP_MODE_SLIP6 is not set
 +# CONFIG_SHAPER is not set
 +# CONFIG_NETCONSOLE is not set
 +# CONFIG_NETPOLL is not set
@@ -354,7 +656,6 @@ diff -ruN linux-2.6.23/arch/lm32/defconfig linux-2.6.23-lm32/arch/lm32/defconfig
 +# CONFIG_RTC is not set
 +# CONFIG_GEN_RTC is not set
 +# CONFIG_R3964 is not set
-+# CONFIG_LM32_GPIO is not set
 +# CONFIG_RAW_DRIVER is not set
 +# CONFIG_TCG_TPM is not set
 +# CONFIG_I2C is not set
@@ -520,7 +821,6 @@ diff -ruN linux-2.6.23/arch/lm32/defconfig linux-2.6.23-lm32/arch/lm32/defconfig
 +# CONFIG_BFS_FS is not set
 +# CONFIG_EFS_FS is not set
 +CONFIG_CRAMFS=y
-+# CONFIG_SQUASHFS is not set
 +# CONFIG_VXFS_FS is not set
 +# CONFIG_HPFS_FS is not set
 +# CONFIG_QNX4FS_FS is not set
@@ -642,249 +942,33 @@ diff -ruN linux-2.6.23/arch/lm32/defconfig linux-2.6.23-lm32/arch/lm32/defconfig
 +CONFIG_CRC32=y
 +# CONFIG_CRC7 is not set
 +# CONFIG_LIBCRC32C is not set
-+CONFIG_LZMA_DECOMPRESS=y
 +CONFIG_ZLIB_INFLATE=y
 +CONFIG_ZLIB_DEFLATE=y
 +CONFIG_PLIST=y
 +CONFIG_HAS_IOMEM=y
 +CONFIG_HAS_DMA=y
-diff -ruN linux-2.6.23/arch/lm32/Kconfig linux-2.6.23-lm32/arch/lm32/Kconfig
---- linux-2.6.23/arch/lm32/Kconfig	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/Kconfig	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,125 @@
+diff --git a/arch/lm32/kernel/Makefile b/arch/lm32/kernel/Makefile
+new file mode 100644
+index 0000000..e3c124f
+--- /dev/null
++++ b/arch/lm32/kernel/Makefile
+@@ -0,0 +1,11 @@
 +#
-+# For a description of the syntax of this configuration file,
-+# see Documentation/kbuild/kconfig-language.txt.
++# arch/lm32/kernel/Makefile
 +#
 +
-+mainmenu "uClinux/lattice mico32 Kernel Configuration"
++extra-y		:= head.o init_task.o vmlinux.lds
 +
-+# this setting fixes all other settings we want to have fixed
-+config LM32
-+	bool
-+	default y
-+	select CPU_MICO32
++obj-y 		+= semaphore.o sys_lm32.o setup.o traps.o signal.o \
++		   time.o ptrace.o irq.o process.o entry.o 
++obj-$(CONFIG_EARLY_PRINTK) += early_printk.o 
 +
-+config MMU
-+	bool
-+	default n
-+
-+config VGA_CONSOLE
-+	bool
-+	default n
-+
-+config ZONE_DMA_FLAG
-+	int
-+	default 0
-+
-+config GENERIC_IOMAP
-+	bool
-+	default y
-+
-+config RWSEM_GENERIC_SPINLOCK
-+	bool
-+	default y
-+
-+config GENERIC_FIND_NEXT_BIT
-+	bool
-+	default y
-+
-+config GENERIC_HWEIGHT
-+	bool
-+	default y
-+
-+config GENERIC_CALIBRATE_DELAY
-+	bool
-+	default y
-+
-+config GENERIC_ALLOCATOR
-+	bool
-+	default y
-+
-+config GENERIC_BUG
-+	bool
-+	default y
-+
-+config GENERIC_HARDIRQS
-+	bool
-+	default y
-+
-+config GENERIC_CLOCKEVENTS
-+	bool
-+	default n
-+
-+config SELECT_MEMORY_MODEL
-+	bool
-+	default y
-+
-+config FLATMEM_MANUAL
-+	bool
-+	default y
-+
-+config FLATMEM
-+	bool
-+	default y
-+
-+config FLAT_NODE_MEM_MAP
-+	bool
-+	default y
-+
-+config FLAT_NODE_MEM_MAP
-+	bool
-+	default y
-+
-+config NO_IOPORT
-+	bool
-+	default y
-+
-+config GENERIC_HARDIRQS_NO__DO_IRQ
-+	bool
-+	default y
-+
-+config APM_EMULATION
-+	bool
-+	default n
-+
-+source "init/Kconfig"
-+
-+source "arch/lm32/Kconfig.cpu"
-+
-+menu "Executable file formats"
-+
-+source "fs/Kconfig.binfmt"
-+
-+endmenu
-+
-+menu "Power management options"
-+
-+config PM
-+	bool "Power Management support"
-+	help
-+	  Support processor power management modes
-+
-+endmenu
-+
-+source "net/Kconfig"
-+
-+source "drivers/Kconfig"
-+
-+source "fs/Kconfig"
-+
-+source "arch/lm32/Kconfig.debug"
-+
-+source "security/Kconfig"
-+
-+source "crypto/Kconfig"
-+
-+source "lib/Kconfig"
-diff -ruN linux-2.6.23/arch/lm32/Kconfig.cpu linux-2.6.23-lm32/arch/lm32/Kconfig.cpu
---- linux-2.6.23/arch/lm32/Kconfig.cpu	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/Kconfig.cpu	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,84 @@
-+menu "Processor, Board and Features"
-+
-+choice
-+	prompt "LM32 platform"
-+	default PLAT_MILKYMIST
-+
-+config PLAT_MILKYMIST
-+	bool "milkymist"
-+	help
-+	  Milkymist board.
-+
-+
-+endchoice
-+
-+if (PLAT_MILKYMIST)
-+choice
-+	prompt "CPU"
-+	default CPU_MICO32
-+
-+config CPU_MICO32
-+	bool "mico32"
-+	help
-+	  Lattice mico32 processor.
-+endchoice
-+
-+choice
-+	prompt "Board Selection"
-+	default BOARD_XILINX_ML401
-+
-+config	BOARD_XILINX_ML401
-+	bool "Xilinx ML401"
-+
-+config	BOARD_MILKYMIST_ONE
-+	bool "Milkymist One"
-+endchoice
-+endif
-+
-+config CPU_CLOCK
-+	int "CPU Clock [Hz] (integer)"
-+	default "100000000" if BOARD_XILINX_ML401
-+	default "100000000" if BOARD_MILKYMIST_ONE
-+
-+config MEMORY_START
-+	hex "Physical memory start address (hex)"
-+	default "0x40000000"  if BOARD_XILINX_ML401
-+	default "0x40000000"  if BOARD_MILKYMIST_ONE
-+
-+config MEMORY_SIZE
-+	hex "Physical memory size (hex)"
-+	default "0x04000000"  if BOARD_XILINX_ML401
-+	default "0x04000000"  if BOARD_MILKYMIST_ONE
-+
-+config TEXT_OFFSET
-+	hex "Set the text offset in memory"
-+	default "0x40000000"  if BOARD_XILINX_ML401
-+	default "0x40000000"  if BOARD_MILKYMIST_ONE
-+	help
-+	  Define where the kernel will be loaded to and executed from.
-+
-+config HZ
-+	int
-+	default 100
-+
-+config EARLY_PRINTK
-+	bool "Early printk"
-+	default y
-+	help
-+	  This option enables special console drivers which allow the kernel
-+	  to print messages very early in the bootup process.
-+
-+	  This is useful for kernel debugging when your machine crashes very
-+	  early before the console code is initialized. You should normally
-+	        say N here, unless you want to debug.
-+
-+config LM32_HW_JTAG
-+bool "Disable kernel exception handling (enable JTAG debugging)"
-+	default n
-+	help
-+	  This option disables the exception handling within the kernel. It is
-+	  required to allow access with the JTAG debugger for kernel-level
-+	  debug access.
-+
-+	  Your should normally say N here, unless you want to debug.
-+endmenu
-diff -ruN linux-2.6.23/arch/lm32/Kconfig.debug linux-2.6.23-lm32/arch/lm32/Kconfig.debug
---- linux-2.6.23/arch/lm32/Kconfig.debug	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/Kconfig.debug	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,13 @@
-+menu "Kernel hacking"
-+
-+source "lib/Kconfig.debug"
-+
-+config BOOTPARAM
-+	bool 'Compiled-in Kernel Boot Parameter'
-+
-+config BOOTPARAM_STRING
-+	string 'Kernel Boot Parameter'
-+	default 'console=ttyS0,19200'
-+	depends on BOOTPARAM
-+
-+endmenu
-diff -ruN linux-2.6.23/arch/lm32/kernel/asm-offsets.c linux-2.6.23-lm32/arch/lm32/kernel/asm-offsets.c
---- linux-2.6.23/arch/lm32/kernel/asm-offsets.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/asm-offsets.c	2009-12-22 02:23:42.000000000 +0100
++obj-$(CONFIG_MODULES)	+= module.o
+diff --git a/arch/lm32/kernel/asm-offsets.c b/arch/lm32/kernel/asm-offsets.c
+new file mode 100644
+index 0000000..b7f0262
+--- /dev/null
++++ b/arch/lm32/kernel/asm-offsets.c
 @@ -0,0 +1,138 @@
 +/*
 + * (C) Copyright 2007
@@ -1024,9 +1108,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/asm-offsets.c linux-2.6.23-lm32/arch/lm3
 +
 +	return 0;
 +}
-diff -ruN linux-2.6.23/arch/lm32/kernel/early_printk.c linux-2.6.23-lm32/arch/lm32/kernel/early_printk.c
---- linux-2.6.23/arch/lm32/kernel/early_printk.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/early_printk.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/early_printk.c b/arch/lm32/kernel/early_printk.c
+new file mode 100644
+index 0000000..47c4306
+--- /dev/null
++++ b/arch/lm32/kernel/early_printk.c
 @@ -0,0 +1,88 @@
 +/*
 + * (C) Copyright 2009
@@ -1116,9 +1202,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/early_printk.c linux-2.6.23-lm32/arch/lm
 +
 +	register_console(&early_console);
 +}
-diff -ruN linux-2.6.23/arch/lm32/kernel/entry.S linux-2.6.23-lm32/arch/lm32/kernel/entry.S
---- linux-2.6.23/arch/lm32/kernel/entry.S	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/entry.S	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/entry.S b/arch/lm32/kernel/entry.S
+new file mode 100644
+index 0000000..5be1db0
+--- /dev/null
++++ b/arch/lm32/kernel/entry.S
 @@ -0,0 +1,965 @@
 +#include <linux/sys.h>
 +#include <linux/linkage.h>
@@ -2085,9 +2173,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/entry.S linux-2.6.23-lm32/arch/lm32/kern
 +	.rept NR_syscalls-(.-_sys_call_table)/4
 +	.long sys_ni_syscall
 +	.endr
-diff -ruN linux-2.6.23/arch/lm32/kernel/head.S linux-2.6.23-lm32/arch/lm32/kernel/head.S
---- linux-2.6.23/arch/lm32/kernel/head.S	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/head.S	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/head.S b/arch/lm32/kernel/head.S
+new file mode 100644
+index 0000000..e461e68
+--- /dev/null
++++ b/arch/lm32/kernel/head.S
 @@ -0,0 +1,111 @@
 +/*
 + *  linux/arch/arm/kernel/head.S
@@ -2200,9 +2290,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/head.S linux-2.6.23-lm32/arch/lm32/kerne
 +	/* init the stack pointer */
 +	addi	sp, sp, -32 /* SZREGS */
 +	ret
-diff -ruN linux-2.6.23/arch/lm32/kernel/init_task.c linux-2.6.23-lm32/arch/lm32/kernel/init_task.c
---- linux-2.6.23/arch/lm32/kernel/init_task.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/init_task.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/init_task.c b/arch/lm32/kernel/init_task.c
+new file mode 100644
+index 0000000..90f68ca
+--- /dev/null
++++ b/arch/lm32/kernel/init_task.c
 @@ -0,0 +1,69 @@
 +/*
 + * (C) Copyright 2007
@@ -2273,9 +2365,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/init_task.c linux-2.6.23-lm32/arch/lm32/
 +struct task_struct init_task = INIT_TASK(init_task);
 +
 +EXPORT_SYMBOL(init_task);
-diff -ruN linux-2.6.23/arch/lm32/kernel/irq.c linux-2.6.23-lm32/arch/lm32/kernel/irq.c
---- linux-2.6.23/arch/lm32/kernel/irq.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/irq.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/irq.c b/arch/lm32/kernel/irq.c
+new file mode 100644
+index 0000000..5ec793f
+--- /dev/null
++++ b/arch/lm32/kernel/irq.c
 @@ -0,0 +1,219 @@
 +/*
 + * (C) Copyright 2007
@@ -2496,24 +2590,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/irq.c linux-2.6.23-lm32/arch/lm32/kernel
 +
 +	manage_signals_irq(regs);
 +}
-diff -ruN linux-2.6.23/arch/lm32/kernel/Makefile linux-2.6.23-lm32/arch/lm32/kernel/Makefile
---- linux-2.6.23/arch/lm32/kernel/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,11 @@
-+#
-+# arch/lm32/kernel/Makefile
-+#
-+
-+extra-y		:= head.o init_task.o vmlinux.lds
-+
-+obj-y 		+= semaphore.o sys_lm32.o setup.o traps.o signal.o \
-+		   time.o ptrace.o irq.o process.o entry.o 
-+obj-$(CONFIG_EARLY_PRINTK) += early_printk.o 
-+
-+obj-$(CONFIG_MODULES)	+= module.o
-diff -ruN linux-2.6.23/arch/lm32/kernel/module.c linux-2.6.23-lm32/arch/lm32/kernel/module.c
---- linux-2.6.23/arch/lm32/kernel/module.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/module.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/module.c b/arch/lm32/kernel/module.c
+new file mode 100644
+index 0000000..33b497d
+--- /dev/null
++++ b/arch/lm32/kernel/module.c
 @@ -0,0 +1,176 @@
 +#include <linux/moduleloader.h>
 +#include <linux/elf.h>
@@ -2691,9 +2772,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/module.c linux-2.6.23-lm32/arch/lm32/ker
 +  return -1;
 +}
 +
-diff -ruN linux-2.6.23/arch/lm32/kernel/process.c linux-2.6.23-lm32/arch/lm32/kernel/process.c
---- linux-2.6.23/arch/lm32/kernel/process.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/process.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/process.c b/arch/lm32/kernel/process.c
+new file mode 100644
+index 0000000..ab30c13
+--- /dev/null
++++ b/arch/lm32/kernel/process.c
 @@ -0,0 +1,317 @@
 +/*
 + * (C) Copyright 2007
@@ -3012,9 +3095,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/process.c linux-2.6.23-lm32/arch/lm32/ke
 +	//printk("start_thread: current=%lx usp=%lx\n", current, usp);
 +}
 +
-diff -ruN linux-2.6.23/arch/lm32/kernel/ptrace.c linux-2.6.23-lm32/arch/lm32/kernel/ptrace.c
---- linux-2.6.23/arch/lm32/kernel/ptrace.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/ptrace.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/ptrace.c b/arch/lm32/kernel/ptrace.c
+new file mode 100644
+index 0000000..9ab3d18
+--- /dev/null
++++ b/arch/lm32/kernel/ptrace.c
 @@ -0,0 +1,247 @@
 +/*
 + * (C) Copyright 2007
@@ -3263,9 +3348,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/ptrace.c linux-2.6.23-lm32/arch/lm32/ker
 +	return ret;
 +}
 +
-diff -ruN linux-2.6.23/arch/lm32/kernel/semaphore.c linux-2.6.23-lm32/arch/lm32/kernel/semaphore.c
---- linux-2.6.23/arch/lm32/kernel/semaphore.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/semaphore.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/semaphore.c b/arch/lm32/kernel/semaphore.c
+new file mode 100644
+index 0000000..6250ac5
+--- /dev/null
++++ b/arch/lm32/kernel/semaphore.c
 @@ -0,0 +1,159 @@
 +/*
 + * (C) Copyright 2007
@@ -3426,10 +3513,12 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/semaphore.c linux-2.6.23-lm32/arch/lm32/
 +{
 +	return waking_non_zero_trylock(sem);
 +}
-diff -ruN linux-2.6.23/arch/lm32/kernel/setup.c linux-2.6.23-lm32/arch/lm32/kernel/setup.c
---- linux-2.6.23/arch/lm32/kernel/setup.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/setup.c	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,268 @@
+diff --git a/arch/lm32/kernel/setup.c b/arch/lm32/kernel/setup.c
+new file mode 100644
+index 0000000..bc52218
+--- /dev/null
++++ b/arch/lm32/kernel/setup.c
+@@ -0,0 +1,299 @@
 +/*
 + * (C) Copyright 2007
 + *     Theobroma Systems <www.theobroma-systems.com>
@@ -3567,7 +3656,7 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/setup.c linux-2.6.23-lm32/arch/lm32/kern
 +    mmu = "none";
 +    fpu = "none";
 +
-+    clockfreq = loops_per_jiffy*HZ;
++    clockfreq = (loops_per_jiffy*HZ)*5/4;
 +
 +    seq_printf(m, "CPU:\t\t%s\n"
 +		   "MMU:\t\t%s\n"
@@ -3650,8 +3739,8 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/setup.c linux-2.6.23-lm32/arch/lm32/kern
 +		.flags = IORESOURCE_MEM,
 +	},
 +	[1] = {
-+		.start = IRQ_PS2,
-+		.end = IRQ_PS2,
++		.start = IRQ_KEYBOARD,
++		.end = IRQ_KEYBOARD,
 +		.flags = IORESOURCE_IRQ,
 +	},
 +};
@@ -3664,6 +3753,29 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/setup.c linux-2.6.23-lm32/arch/lm32/kern
 +};
 +#endif
 +
++#if defined(CONFIG_BOARD_XILINX_ML401) && defined(CONFIG_SERIO_MILKMOUSE)
++static struct resource lm32milkmouse_resources[] = {
++	[0] = {
++		.start = 0x80008000,
++		.end = 0x80008000,
++		.flags = IORESOURCE_MEM,
++	},
++	[1] = {
++		.start = IRQ_MOUSE,
++		.end = IRQ_MOUSE,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device lm32milkmouse_device = {
++	.name = "milkmouse",
++	.id = 0,
++	.num_resources = ARRAY_SIZE(lm32milkmouse_resources),
++	.resource = lm32milkmouse_resources,
++};
++#endif
++
++/* setup all devices we find in the hardware setup information */
 +/* setup all devices we find in the hardware setup information */
 +static int __init setup_devices(void) {
 +	int ret = 0;
@@ -3691,6 +3803,14 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/setup.c linux-2.6.23-lm32/arch/lm32/kern
 +	}
 +#endif
 +
++#if defined(CONFIG_BOARD_XILINX_ML401) && defined(CONFIG_SERIO_MILKMOUSE)
++	err = platform_device_register(&lm32milkmouse_device);
++	if( err ) {
++		printk(KERN_ERR "could not register 'milkymist_ps2mouse'error:%d\n", err);
++		ret = err;
++	}
++#endif
++
 +	return ret;
 +}
 +/* default console - interface to milkymistuart.c serial + console driver */
@@ -3698,9 +3818,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/setup.c linux-2.6.23-lm32/arch/lm32/kern
 +
 +arch_initcall(setup_devices);
 +
-diff -ruN linux-2.6.23/arch/lm32/kernel/signal.c linux-2.6.23-lm32/arch/lm32/kernel/signal.c
---- linux-2.6.23/arch/lm32/kernel/signal.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/signal.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/signal.c b/arch/lm32/kernel/signal.c
+new file mode 100644
+index 0000000..2e1fb84
+--- /dev/null
++++ b/arch/lm32/kernel/signal.c
 @@ -0,0 +1,493 @@
 +/*
 + * (C) Copyright 2007
@@ -4195,9 +4317,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/signal.c linux-2.6.23-lm32/arch/lm32/ker
 +
 +	local_irq_restore(flags);
 +}
-diff -ruN linux-2.6.23/arch/lm32/kernel/sys_lm32.c linux-2.6.23-lm32/arch/lm32/kernel/sys_lm32.c
---- linux-2.6.23/arch/lm32/kernel/sys_lm32.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/sys_lm32.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/sys_lm32.c b/arch/lm32/kernel/sys_lm32.c
+new file mode 100644
+index 0000000..aa6affc
+--- /dev/null
++++ b/arch/lm32/kernel/sys_lm32.c
 @@ -0,0 +1,211 @@
 +/*
 + * (C) Copyright 2007
@@ -4410,9 +4534,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/sys_lm32.c linux-2.6.23-lm32/arch/lm32/k
 +			*/
 +	}
 +}
-diff -ruN linux-2.6.23/arch/lm32/kernel/time.c linux-2.6.23-lm32/arch/lm32/kernel/time.c
---- linux-2.6.23/arch/lm32/kernel/time.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/time.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/time.c b/arch/lm32/kernel/time.c
+new file mode 100644
+index 0000000..3d93f82
+--- /dev/null
++++ b/arch/lm32/kernel/time.c
 @@ -0,0 +1,193 @@
 +/*
 + * (C) Copyright 2007
@@ -4607,9 +4733,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/time.c linux-2.6.23-lm32/arch/lm32/kerne
 +	return 0;
 +}
 +EXPORT_SYMBOL(do_settimeofday);
-diff -ruN linux-2.6.23/arch/lm32/kernel/traps.c linux-2.6.23-lm32/arch/lm32/kernel/traps.c
---- linux-2.6.23/arch/lm32/kernel/traps.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/traps.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/traps.c b/arch/lm32/kernel/traps.c
+new file mode 100644
+index 0000000..56cbb4c
+--- /dev/null
++++ b/arch/lm32/kernel/traps.c
 @@ -0,0 +1,206 @@
 +/*
 + * (C) Copyright 2007
@@ -4817,9 +4945,11 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/traps.c linux-2.6.23-lm32/arch/lm32/kern
 +	}
 +}
 +
-diff -ruN linux-2.6.23/arch/lm32/kernel/vmlinux.lds.S linux-2.6.23-lm32/arch/lm32/kernel/vmlinux.lds.S
---- linux-2.6.23/arch/lm32/kernel/vmlinux.lds.S	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/kernel/vmlinux.lds.S	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/kernel/vmlinux.lds.S b/arch/lm32/kernel/vmlinux.lds.S
+new file mode 100644
+index 0000000..9491d52
+--- /dev/null
++++ b/arch/lm32/kernel/vmlinux.lds.S
 @@ -0,0 +1,179 @@
 +/* ld script to make lm32 Linux kernel
 + * taken from the arm version by Martin Mares
@@ -5000,9 +5130,23 @@ diff -ruN linux-2.6.23/arch/lm32/kernel/vmlinux.lds.S linux-2.6.23-lm32/arch/lm3
 +	.comment 0 : { *(.comment) }
 +}
 +
-diff -ruN linux-2.6.23/arch/lm32/lib/arithmetic.c linux-2.6.23-lm32/arch/lm32/lib/arithmetic.c
---- linux-2.6.23/arch/lm32/lib/arithmetic.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/lib/arithmetic.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/lib/Makefile b/arch/lm32/lib/Makefile
+new file mode 100644
+index 0000000..2819859
+--- /dev/null
++++ b/arch/lm32/lib/Makefile
+@@ -0,0 +1,6 @@
++#
++# Makefile for lm32 specific library files..
++#
++
++lib-y	:= memset.o memcpy.o checksum.o arithmetic.o libgcc2.o
++
+diff --git a/arch/lm32/lib/arithmetic.c b/arch/lm32/lib/arithmetic.c
+new file mode 100644
+index 0000000..2c48197
+--- /dev/null
++++ b/arch/lm32/lib/arithmetic.c
 @@ -0,0 +1,223 @@
 +/* Arithmetic functions taken from libgcc2 for lm32 */
 +
@@ -5227,9 +5371,11 @@ diff -ruN linux-2.6.23/arch/lm32/lib/arithmetic.c linux-2.6.23-lm32/arch/lm32/li
 +    __asm__ ("srui     %0, %0, 1" : "=r" (a) : "0" (a));
 +  return a;
 +}
-diff -ruN linux-2.6.23/arch/lm32/lib/checksum.c linux-2.6.23-lm32/arch/lm32/lib/checksum.c
---- linux-2.6.23/arch/lm32/lib/checksum.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/lib/checksum.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/lib/checksum.c b/arch/lm32/lib/checksum.c
+new file mode 100644
+index 0000000..fbd3dad
+--- /dev/null
++++ b/arch/lm32/lib/checksum.c
 @@ -0,0 +1,168 @@
 +/*
 + * INET		An implementation of the TCP/IP protocol suite for the LINUX
@@ -5399,9 +5545,11 @@ diff -ruN linux-2.6.23/arch/lm32/lib/checksum.c linux-2.6.23-lm32/arch/lm32/lib/
 +	memcpy(dst, src, len);
 +	return csum_partial(dst, len, sum);
 +}
-diff -ruN linux-2.6.23/arch/lm32/lib/libgcc2.c linux-2.6.23-lm32/arch/lm32/lib/libgcc2.c
---- linux-2.6.23/arch/lm32/lib/libgcc2.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/lib/libgcc2.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/lib/libgcc2.c b/arch/lm32/lib/libgcc2.c
+new file mode 100644
+index 0000000..71a09e6
+--- /dev/null
++++ b/arch/lm32/lib/libgcc2.c
 @@ -0,0 +1,181 @@
 +/* Arithmetic functions taken from libgcc2 for lm32 */
 +
@@ -5584,19 +5732,11 @@ diff -ruN linux-2.6.23/arch/lm32/lib/libgcc2.c linux-2.6.23-lm32/arch/lm32/lib/l
 +
 +  return w.ll;
 +}
-diff -ruN linux-2.6.23/arch/lm32/lib/Makefile linux-2.6.23-lm32/arch/lm32/lib/Makefile
---- linux-2.6.23/arch/lm32/lib/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/lib/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,6 @@
-+#
-+# Makefile for lm32 specific library files..
-+#
-+
-+lib-y	:= memset.o memcpy.o checksum.o arithmetic.o libgcc2.o
-+
-diff -ruN linux-2.6.23/arch/lm32/lib/memcpy.c linux-2.6.23-lm32/arch/lm32/lib/memcpy.c
---- linux-2.6.23/arch/lm32/lib/memcpy.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/lib/memcpy.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/lib/memcpy.c b/arch/lm32/lib/memcpy.c
+new file mode 100644
+index 0000000..335b883
+--- /dev/null
++++ b/arch/lm32/lib/memcpy.c
 @@ -0,0 +1,64 @@
 +
 +#include <linux/types.h>
@@ -5662,9 +5802,11 @@ diff -ruN linux-2.6.23/arch/lm32/lib/memcpy.c linux-2.6.23-lm32/arch/lm32/lib/me
 +    *c_to++ = *c_from++;
 +  return((void *) to);
 +}
-diff -ruN linux-2.6.23/arch/lm32/lib/memset.c linux-2.6.23-lm32/arch/lm32/lib/memset.c
---- linux-2.6.23/arch/lm32/lib/memset.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/lib/memset.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/lib/memset.c b/arch/lm32/lib/memset.c
+new file mode 100644
+index 0000000..1389bf4
+--- /dev/null
++++ b/arch/lm32/lib/memset.c
 @@ -0,0 +1,47 @@
 +#include <linux/types.h>
 +
@@ -5713,64 +5855,22 @@ diff -ruN linux-2.6.23/arch/lm32/lib/memset.c linux-2.6.23-lm32/arch/lm32/lib/me
 +    }
 +  return xs;
 +}
-diff -ruN linux-2.6.23/arch/lm32/Makefile linux-2.6.23-lm32/arch/lm32/Makefile
---- linux-2.6.23/arch/lm32/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,51 @@
+diff --git a/arch/lm32/mm/Makefile b/arch/lm32/mm/Makefile
+new file mode 100644
+index 0000000..4ae7f36
+--- /dev/null
++++ b/arch/lm32/mm/Makefile
+@@ -0,0 +1,5 @@
 +#
-+# arch/lm32/Makefile
-+#
-+# (C) Copyright 2007, Theobroma Systems <www.theobroma-systems.com>
-+#
-+# See file CREDITS for list of people who contributed to this
-+# project.
-+#
-+# This program is free software; you can redistribute it and/or
-+# modify it under the terms of the GNU General Public License as
-+# published by the Free Software Foundation; either version 2 of
-+# the License, or (at your option) any later version.
-+#
-+# This program is distributed in the hope that it will be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write to the Free Software
-+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+# MA 02111-1307 USA
++# arch/lm32/mm/Makefile
 +#
 +
-+board-$(CONFIG_BOARD_XILINX_ML401)	:= ml401
-+board-$(CONFIG_BOARD_MILKYMIST_ONE)	:= milkymist-one
-+BOARD := $(board-y)
-+
-+export BOARD
-+
-+cflags-y := -mmultiply-enabled -mdivide-enabled \
-+	-mbarrel-shift-enabled -msign-extend-enabled
-+
-+AFLAGS += $(cflags-y)
-+
-+OBJCOPYFLAGS	:=-O binary -R .note -R .comment -S
-+
-+CFLAGS += $(cflags-y)
-+CFLAGS += -D__linux__
-+CFLAGS += -DUTS_SYSNAME=\"uClinux\"
-+
-+head-y := arch/lm32/kernel/head.o arch/lm32/kernel/init_task.o
-+
-+core-y	+= arch/lm32/kernel/ arch/lm32/mm/
-+libs-y	+= arch/lm32/lib/
-+
-+vmlinux.bin: vmlinux
-+	$(OBJCOPY) $(OBJCOPYFLAGS) $< $@
-+
-+vmlinux.gz: vmlinux.bin
-+	cat $< |gzip >$@
-diff -ruN linux-2.6.23/arch/lm32/mm/init.c linux-2.6.23-lm32/arch/lm32/mm/init.c
---- linux-2.6.23/arch/lm32/mm/init.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/mm/init.c	2009-12-22 02:23:42.000000000 +0100
++obj-y += memory.o init.o kmap.o
+diff --git a/arch/lm32/mm/init.c b/arch/lm32/mm/init.c
+new file mode 100644
+index 0000000..973bb68
+--- /dev/null
++++ b/arch/lm32/mm/init.c
 @@ -0,0 +1,242 @@
 +/*
 + * (C) Copyright 2007
@@ -6014,9 +6114,11 @@ diff -ruN linux-2.6.23/arch/lm32/mm/init.c linux-2.6.23-lm32/arch/lm32/mm/init.c
 +	printk(KERN_INFO "%d pages shared\n",shared);
 +	printk(KERN_INFO "%d pages swap cached\n",cached);
 +}
-diff -ruN linux-2.6.23/arch/lm32/mm/kmap.c linux-2.6.23-lm32/arch/lm32/mm/kmap.c
---- linux-2.6.23/arch/lm32/mm/kmap.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/mm/kmap.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/mm/kmap.c b/arch/lm32/mm/kmap.c
+new file mode 100644
+index 0000000..2f52264
+--- /dev/null
++++ b/arch/lm32/mm/kmap.c
 @@ -0,0 +1,81 @@
 +/*
 + * (C) Copyright 2007
@@ -6099,18 +6201,11 @@ diff -ruN linux-2.6.23/arch/lm32/mm/kmap.c linux-2.6.23-lm32/arch/lm32/mm/kmap.c
 +void kernel_set_cachemode(void *addr, unsigned long size, int cmode)
 +{
 +}
-diff -ruN linux-2.6.23/arch/lm32/mm/Makefile linux-2.6.23-lm32/arch/lm32/mm/Makefile
---- linux-2.6.23/arch/lm32/mm/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/mm/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,5 @@
-+#
-+# arch/lm32/mm/Makefile
-+#
-+
-+obj-y += memory.o init.o kmap.o
-diff -ruN linux-2.6.23/arch/lm32/mm/memory.c linux-2.6.23-lm32/arch/lm32/mm/memory.c
---- linux-2.6.23/arch/lm32/mm/memory.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/arch/lm32/mm/memory.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/arch/lm32/mm/memory.c b/arch/lm32/mm/memory.c
+new file mode 100644
+index 0000000..a347cd6
+--- /dev/null
++++ b/arch/lm32/mm/memory.c
 @@ -0,0 +1,112 @@
 +/*
 + * (C) Copyright 2007
@@ -6224,10 +6319,11 @@ diff -ruN linux-2.6.23/arch/lm32/mm/memory.c linux-2.6.23-lm32/arch/lm32/mm/memo
 +	return paddr;
 +}
 +
-diff -ruN linux-2.6.23/drivers/block/Kconfig linux-2.6.23-lm32/drivers/block/Kconfig
---- linux-2.6.23/drivers/block/Kconfig	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/block/Kconfig	2009-12-22 02:23:42.000000000 +0100
-@@ -430,7 +430,7 @@
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 4245b7f..49af06c 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -430,7 +430,7 @@ source "drivers/s390/block/Kconfig"
  
  config XILINX_SYSACE
  	tristate "Xilinx SystemACE support"
@@ -6236,10 +6332,11 @@ diff -ruN linux-2.6.23/drivers/block/Kconfig linux-2.6.23-lm32/drivers/block/Kco
  	help
  	  Include support for the Xilinx SystemACE CompactFlash interface
  
-diff -ruN linux-2.6.23/drivers/block/xsysace.c linux-2.6.23-lm32/drivers/block/xsysace.c
---- linux-2.6.23/drivers/block/xsysace.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/block/xsysace.c	2009-12-22 02:23:42.000000000 +0100
-@@ -97,9 +97,14 @@
+diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+index 3ede0b6..233f80e 100644
+--- a/drivers/block/xsysace.c
++++ b/drivers/block/xsysace.c
+@@ -97,9 +97,14 @@ MODULE_DESCRIPTION("Xilinx SystemACE device driver");
  MODULE_LICENSE("GPL");
  
  /* SystemACE register definitions */
@@ -6255,7 +6352,7 @@ diff -ruN linux-2.6.23/drivers/block/xsysace.c linux-2.6.23-lm32/drivers/block/x
  #define ACE_STATUS_CFGLOCK      (0x00000001)
  #define ACE_STATUS_MPULOCK      (0x00000002)
  #define ACE_STATUS_CFGERROR     (0x00000004)	/* config controller error */
-@@ -119,23 +124,41 @@
+@@ -119,23 +124,41 @@ MODULE_LICENSE("GPL");
  #define ACE_STATUS_CFCORR       (0x00400000)
  #define ACE_STATUS_CFERR        (0x00800000)
  
@@ -6297,7 +6394,7 @@ diff -ruN linux-2.6.23/drivers/block/xsysace.c linux-2.6.23-lm32/drivers/block/x
  #define ACE_CTRL_FORCELOCKREQ   (0x0001)
  #define ACE_CTRL_LOCKREQ        (0x0002)
  #define ACE_CTRL_FORCECFGADDR   (0x0004)
-@@ -151,7 +174,11 @@
+@@ -151,7 +174,11 @@ MODULE_LICENSE("GPL");
  #define ACE_CTRL_CFGPROG        (0x1000)
  #define ACE_CTRL_CFGADDR_MASK   (0xe000)
  
@@ -6309,7 +6406,7 @@ diff -ruN linux-2.6.23/drivers/block/xsysace.c linux-2.6.23-lm32/drivers/block/x
  
  #define ACE_NUM_MINORS 16
  #define ACE_SECTOR_SIZE (512)
-@@ -274,7 +301,11 @@
+@@ -274,7 +301,11 @@ static void ace_datain_be16(struct ace_device *ace)
  	int i = ACE_FIFO_SIZE / 2;
  	u16 *dst = ace->data_ptr;
  	while (i--)
@@ -6321,7 +6418,7 @@ diff -ruN linux-2.6.23/drivers/block/xsysace.c linux-2.6.23-lm32/drivers/block/x
  	ace->data_ptr = dst;
  }
  
-@@ -283,7 +314,11 @@
+@@ -283,7 +314,11 @@ static void ace_dataout_be16(struct ace_device *ace)
  	int i = ACE_FIFO_SIZE / 2;
  	u16 *src = ace->data_ptr;
  	while (i--)
@@ -6333,7 +6430,7 @@ diff -ruN linux-2.6.23/drivers/block/xsysace.c linux-2.6.23-lm32/drivers/block/x
  	ace->data_ptr = src;
  }
  
-@@ -940,7 +975,7 @@
+@@ -940,7 +975,7 @@ static int __devinit ace_setup(struct ace_device *ace)
  	/*
  	 * Map the device
  	 */
@@ -6342,62 +6439,54 @@ diff -ruN linux-2.6.23/drivers/block/xsysace.c linux-2.6.23-lm32/drivers/block/x
  	if (!ace->baseaddr)
  		goto err_ioremap;
  
-diff -ruN linux-2.6.23/drivers/input/keyboard/atkbd.c linux-2.6.23-lm32/drivers/input/keyboard/atkbd.c
---- linux-2.6.23/drivers/input/keyboard/atkbd.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/input/keyboard/atkbd.c	2009-12-22 02:23:42.000000000 +0100
-@@ -665,6 +665,8 @@
-  * these systems the BIOS also usually doesn't do it for us.
-  */
- 
-+/* PS/2 write is not supported yet on Milkymist */
-+#ifndef CONFIG_PLAT_MILKYMIST
- 	if (atkbd_reset)
- 		if (ps2_command(ps2dev, NULL, ATKBD_CMD_RESET_BAT))
- 			printk(KERN_WARNING "atkbd.c: keyboard reset failed on %s\n", ps2dev->serio->phys);
-@@ -701,6 +703,7 @@
- 		printk(KERN_ERR "atkbd.c: controllers. Use i8042.direct=1 to disable translation.\n");
- 		return -1;
- 	}
-+#endif
- 
- 	return 0;
- }
-diff -ruN linux-2.6.23/drivers/input/serio/Kconfig linux-2.6.23-lm32/drivers/input/serio/Kconfig
---- linux-2.6.23/drivers/input/serio/Kconfig	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/input/serio/Kconfig	2009-12-22 02:23:42.000000000 +0100
-@@ -165,6 +165,13 @@
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 5ce632c..251872c 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -165,6 +165,20 @@ config SERIO_LIBPS2
  	  To compile this driver as a module, choose M here: the
  	  module will be called libps2.
  
 +config SERIO_MILKBD
-+	tristate "Milkymist PS/2 keyboard"
++	tristate "Milkymist PS/2 keyboard connector"
 +	depends on PLAT_MILKYMIST
 +	help
 +	  Say Y here if you are building for Milkymist and want to use an AT
-+	  keyboard connected to its PS/2 controller.
++	  keyboard or mouse connected to its PS/2 connector.
++
++config SERIO_MILKMOUSE
++	tristate "Milkymist PS/2 mouse connector"
++	depends on PLAT_MILKYMIST
++	help
++	  Say Y here if you are building for Milkymist and want to use an AT
++	  keyboard or mouse connected to its PS/2 connector.
 +
  config SERIO_RAW
  	tristate "Raw access to serio ports"
  	help
-diff -ruN linux-2.6.23/drivers/input/serio/Makefile linux-2.6.23-lm32/drivers/input/serio/Makefile
---- linux-2.6.23/drivers/input/serio/Makefile	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/input/serio/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -19,4 +19,5 @@
+diff --git a/drivers/input/serio/Makefile b/drivers/input/serio/Makefile
+index 4155197..fe12dbd 100644
+--- a/drivers/input/serio/Makefile
++++ b/drivers/input/serio/Makefile
+@@ -19,4 +19,6 @@ obj-$(CONFIG_HIL_MLC)		+= hp_sdc_mlc.o hil_mlc.o
  obj-$(CONFIG_SERIO_PCIPS2)	+= pcips2.o
  obj-$(CONFIG_SERIO_MACEPS2)	+= maceps2.o
  obj-$(CONFIG_SERIO_LIBPS2)	+= libps2.o
 +obj-$(CONFIG_SERIO_MILKBD)	+= milkbd.o
++obj-$(CONFIG_SERIO_MILKMOUSE)	+= milkmouse.o
  obj-$(CONFIG_SERIO_RAW)		+= serio_raw.o
-diff -ruN linux-2.6.23/drivers/input/serio/milkbd.c linux-2.6.23-lm32/drivers/input/serio/milkbd.c
---- linux-2.6.23/drivers/input/serio/milkbd.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/drivers/input/serio/milkbd.c	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,144 @@
+diff --git a/drivers/input/serio/milkbd.c b/drivers/input/serio/milkbd.c
+new file mode 100644
+index 0000000..159a768
+--- /dev/null
++++ b/drivers/input/serio/milkbd.c
+@@ -0,0 +1,143 @@
 +/*
 + * milkbd.c
 + */
 +
 +/*
-+ * Milkymist PS/2 keyboard controller driver for Linux
++ * Milkymist PS/2 keyboard connector driver for Linux
 + */
 +
 +/*
@@ -6429,20 +6518,19 @@ diff -ruN linux-2.6.23/drivers/input/serio/milkbd.c linux-2.6.23-lm32/drivers/in
 +#include <asm/irq.h>
 +
 +MODULE_AUTHOR("");
-+MODULE_DESCRIPTION("Milkymist PS/2 keyboard controller driver");
++MODULE_DESCRIPTION("Milkymist PS/2 keyboard connector driver");
 +MODULE_LICENSE("GPL");
 +
 +/*
 + * Register numbers.
 + */
 +#define	PS2_DATA_REG	0x80007000
++#define	PS2_STATUS_REG	0x80007004
++#define PS2_TX_BUSY	0x01
 +
 +static int milkbd_write(struct serio *port, unsigned char val)
 +{
-+#if 0
-+	while (!(iomd_readb(IOMD_KCTRL) & (1 << 7)))
-+		cpu_relax();
-+#endif
++	while(readl(PS2_STATUS_REG)&PS2_TX_BUSY);
 +
 +	writel(val, PS2_DATA_REG);
 +
@@ -6465,23 +6553,23 @@ diff -ruN linux-2.6.23/drivers/input/serio/milkbd.c linux-2.6.23-lm32/drivers/in
 +static int milkbd_open(struct serio *port)
 +{
 +
-+	if (request_irq(IRQ_PS2, milkbd_rx, 0, "milkbd", port) != 0) {
++	if (request_irq(IRQ_KEYBOARD, milkbd_rx, 0, "milkbd", port) != 0) {
 +		printk(KERN_ERR "milkbd.c: Could not allocate keyboard receive IRQ\n");
 +		return -EBUSY;
 +	}
 +
-+	lm32_irq_unmask(IRQ_PS2);
++	lm32_irq_unmask(IRQ_KEYBOARD);
 +
-+	printk(KERN_INFO "milkymist_serio: ps2 port at 0x%08x irq %d\n",
++	printk(KERN_INFO "milkymist_ps2: Keyboard connector at 0x%08x irq %d\n",
 +		PS2_DATA_REG,
-+		IRQ_PS2);
++		IRQ_KEYBOARD);
 +
 +	return 0;
 +}
 +
 +static void milkbd_close(struct serio *port)
 +{
-+	free_irq(IRQ_PS2, port);
++	free_irq(IRQ_KEYBOARD, port);
 +}
 +
 +/*
@@ -6501,8 +6589,8 @@ diff -ruN linux-2.6.23/drivers/input/serio/milkbd.c linux-2.6.23-lm32/drivers/in
 +	serio->open		= milkbd_open;
 +	serio->close		= milkbd_close;
 +	serio->dev.parent	= &dev->dev;
-+	strlcpy(serio->name, "Milkymist PS/2 kbd port", sizeof(serio->name));
-+	strlcpy(serio->phys, "milkbd/serio0", sizeof(serio->phys));
++	strlcpy(serio->name, "Milkymist PS/2 Keyboard connector", sizeof(serio->name));
++	strlcpy(serio->phys, "milkymist/ps2keyboard", sizeof(serio->phys));
 +
 +	platform_set_drvdata(dev, serio);
 +	serio_register_port(serio);
@@ -6536,10 +6624,160 @@ diff -ruN linux-2.6.23/drivers/input/serio/milkbd.c linux-2.6.23-lm32/drivers/in
 +
 +module_init(milkbd_init);
 +module_exit(milkbd_exit);
-diff -ruN linux-2.6.23/drivers/mtd/maps/Kconfig linux-2.6.23-lm32/drivers/mtd/maps/Kconfig
---- linux-2.6.23/drivers/mtd/maps/Kconfig	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/mtd/maps/Kconfig	2009-12-22 02:23:42.000000000 +0100
-@@ -524,6 +524,12 @@
+diff --git a/drivers/input/serio/milkmouse.c b/drivers/input/serio/milkmouse.c
+new file mode 100644
+index 0000000..be00acf
+--- /dev/null
++++ b/drivers/input/serio/milkmouse.c
+@@ -0,0 +1,143 @@
++/*
++ * milkmouse.c
++ */
++
++/*
++ * Milkymist PS/2 mouse connector driver for Linux
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ * Should you need to contact me, the author, you can do so either by
++ * e-mail - mail your message to <vojtech@ucw.cz>, or by paper mail:
++ * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
++ */
++
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/init.h>
++#include <linux/serio.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <asm/irq.h>
++
++MODULE_AUTHOR("");
++MODULE_DESCRIPTION("Milkymist PS/2 mouse connector driver");
++MODULE_LICENSE("GPL");
++
++/*
++ * Register numbers.
++ */
++#define	PS2_DATA_REG	0x80008000
++#define PS2_STATUS_REG	0x80008004
++#define PS2_TX_BUSY	0x01
++
++static int milkmouse_write(struct serio *port, unsigned char val)
++{
++	while(readl(PS2_STATUS_REG)&PS2_TX_BUSY);
++
++	writel(val, PS2_DATA_REG);
++
++	return 0;
++}
++
++static irqreturn_t milkmouse_rx(int irq, void *dev_id)
++{
++	struct serio *port = dev_id;
++	unsigned int byte;
++	int handled = IRQ_NONE;
++
++	byte = readl(PS2_DATA_REG);
++	serio_interrupt(port, byte, 0);
++	handled = IRQ_HANDLED;
++
++	return handled;
++}
++
++static int milkmouse_open(struct serio *port)
++{
++
++	if (request_irq(IRQ_MOUSE, milkmouse_rx, 0, "milkmouse", port) != 0) {
++		printk(KERN_ERR "milkmouse.c: Could not allocate mouse receive IRQ\n");
++		return -EBUSY;
++	}
++
++	lm32_irq_unmask(IRQ_MOUSE);
++
++	printk(KERN_INFO "milkymist_ps2: Mouse connector at 0x%08x irq %d\n",
++		PS2_DATA_REG,
++		IRQ_MOUSE);
++
++	return 0;
++}
++
++static void milkmouse_close(struct serio *port)
++{
++	free_irq(IRQ_MOUSE, port);
++}
++
++/*
++ * Allocate and initialize serio structure for subsequent registration
++ * with serio core.
++ */
++static int __devinit milkmouse_probe(struct platform_device *dev)
++{
++	struct serio *serio;
++
++	serio = kzalloc(sizeof(struct serio), GFP_KERNEL);
++	if (!serio)
++		return -ENOMEM;
++
++	serio->id.type		= SERIO_8042;
++	serio->write		= milkmouse_write;
++	serio->open		= milkmouse_open;
++	serio->close		= milkmouse_close;
++	serio->dev.parent	= &dev->dev;
++	strlcpy(serio->name, "Milkymist PS/2 Mouse connector", sizeof(serio->name));
++	strlcpy(serio->phys, "milkymist/ps2mouse", sizeof(serio->phys));
++
++	platform_set_drvdata(dev, serio);
++	serio_register_port(serio);
++	return 0;
++}
++
++static int __devexit milkmouse_remove(struct platform_device *dev)
++{
++	struct serio *serio = platform_get_drvdata(dev);
++	serio_unregister_port(serio);
++	return 0;
++}
++
++static struct platform_driver milkmouse_driver = {
++	.probe		= milkmouse_probe,
++	.remove		= __devexit_p(milkmouse_remove),
++	.driver		= {
++	.name		= "milkmouse",
++	},
++};
++
++static int __init milkmouse_init(void)
++{
++	return platform_driver_register(&milkmouse_driver);
++}
++
++static void __exit milkmouse_exit(void)
++{
++	platform_driver_unregister(&milkmouse_driver);
++}
++
++module_init(milkmouse_init);
++module_exit(milkmouse_exit);
+diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
+index cc6c734..54ecc46 100644
+--- a/drivers/mtd/maps/Kconfig
++++ b/drivers/mtd/maps/Kconfig
+@@ -524,6 +524,12 @@ config MTD_OMAP_NOR
  	  These boards include the Innovator, H2, H3, OSK, Perseus2, and
  	  more.  If you have such a board, say 'Y'.
  
@@ -6552,17 +6790,20 @@ diff -ruN linux-2.6.23/drivers/mtd/maps/Kconfig linux-2.6.23-lm32/drivers/mtd/ma
  # This needs CFI or JEDEC, depending on the cards found.
  config MTD_PCI
  	tristate "PCI MTD driver"
-diff -ruN linux-2.6.23/drivers/mtd/maps/Makefile linux-2.6.23-lm32/drivers/mtd/maps/Makefile
---- linux-2.6.23/drivers/mtd/maps/Makefile	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/mtd/maps/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -71,3 +71,4 @@
+diff --git a/drivers/mtd/maps/Makefile b/drivers/mtd/maps/Makefile
+index 970b189..058583d 100644
+--- a/drivers/mtd/maps/Makefile
++++ b/drivers/mtd/maps/Makefile
+@@ -71,3 +71,4 @@ obj-$(CONFIG_MTD_PLATRAM)	+= plat-ram.o
  obj-$(CONFIG_MTD_OMAP_NOR)	+= omap_nor.o
  obj-$(CONFIG_MTD_MTX1)		+= mtx-1_flash.o
  obj-$(CONFIG_MTD_TQM834x)	+= tqm834x.o
 +obj-$(CONFIG_MTD_MILKYMIST)	+= milkymist_flash.o
-diff -ruN linux-2.6.23/drivers/mtd/maps/milkymist_flash.c linux-2.6.23-lm32/drivers/mtd/maps/milkymist_flash.c
---- linux-2.6.23/drivers/mtd/maps/milkymist_flash.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/drivers/mtd/maps/milkymist_flash.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/drivers/mtd/maps/milkymist_flash.c b/drivers/mtd/maps/milkymist_flash.c
+new file mode 100644
+index 0000000..f155ad7
+--- /dev/null
++++ b/drivers/mtd/maps/milkymist_flash.c
 @@ -0,0 +1,99 @@
 +/*
 + * This program is free software; you can redistribute it and/or
@@ -6663,10 +6904,11 @@ diff -ruN linux-2.6.23/drivers/mtd/maps/milkymist_flash.c linux-2.6.23-lm32/driv
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Milkymist MTD Mapping driver");
 +MODULE_AUTHOR("Clark Xin, codinflu@gmail.com");
-diff -ruN linux-2.6.23/drivers/serial/Kconfig linux-2.6.23-lm32/drivers/serial/Kconfig
---- linux-2.6.23/drivers/serial/Kconfig	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/serial/Kconfig	2009-12-22 02:23:42.000000000 +0100
-@@ -1259,4 +1259,18 @@
+diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
+index 81b52b7..1cdf2d7 100644
+--- a/drivers/serial/Kconfig
++++ b/drivers/serial/Kconfig
+@@ -1259,4 +1259,18 @@ config SERIAL_OF_PLATFORM
  	  Currently, only 8250 compatible ports are supported, but
  	  others can easily be added.
  
@@ -6685,17 +6927,20 @@ diff -ruN linux-2.6.23/drivers/serial/Kconfig linux-2.6.23-lm32/drivers/serial/K
 +	  Allow to use the Milkymist UART driver as system console.
 +
  endmenu
-diff -ruN linux-2.6.23/drivers/serial/Makefile linux-2.6.23-lm32/drivers/serial/Makefile
---- linux-2.6.23/drivers/serial/Makefile	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/serial/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -64,3 +64,4 @@
+diff --git a/drivers/serial/Makefile b/drivers/serial/Makefile
+index af6377d..f9cdbed 100644
+--- a/drivers/serial/Makefile
++++ b/drivers/serial/Makefile
+@@ -64,3 +64,4 @@ obj-$(CONFIG_SERIAL_UARTLITE) += uartlite.o
  obj-$(CONFIG_SERIAL_NETX) += netx-serial.o
  obj-$(CONFIG_SERIAL_OF_PLATFORM) += of_serial.o
  obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
 +obj-$(CONFIG_SERIAL_MILKYMIST) += milkymist_uart.o
-diff -ruN linux-2.6.23/drivers/serial/milkymist_uart.c linux-2.6.23-lm32/drivers/serial/milkymist_uart.c
---- linux-2.6.23/drivers/serial/milkymist_uart.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/drivers/serial/milkymist_uart.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/drivers/serial/milkymist_uart.c b/drivers/serial/milkymist_uart.c
+new file mode 100644
+index 0000000..1133fc8
+--- /dev/null
++++ b/drivers/serial/milkymist_uart.c
 @@ -0,0 +1,498 @@
 +/*
 + * (C) Copyright 2009 Sebastien Bourdeauducq
@@ -7195,10 +7440,44 @@ diff -ruN linux-2.6.23/drivers/serial/milkymist_uart.c linux-2.6.23-lm32/drivers
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Milkymist UART driver");
 +MODULE_AUTHOR("Milkymist Project");
-diff -ruN linux-2.6.23/drivers/video/console/fbcon.c linux-2.6.23-lm32/drivers/video/console/fbcon.c
---- linux-2.6.23/drivers/video/console/fbcon.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/video/console/fbcon.c	2009-12-22 02:23:42.000000000 +0100
-@@ -440,6 +440,25 @@
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 5216c11..ca3bf4f 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -1833,6 +1833,16 @@ config FB_XILINX
+ 	  framebuffer. ML300 carries a 640*480 LCD display on the board,
+ 	  ML403 uses a standard DB15 VGA connector.
+ 
++config FB_MILKYMIST
++	bool "Milkymist framebuffer support"
++	depends on (FB = y) && PLAT_MILKYMIST
++	select FB_SYS_FILLRECT
++	select FB_SYS_COPYAREA
++	select FB_SYS_IMAGEBLIT
++	select FB_SYS_FOPS
++	help
++	  Say Y here to enable support for Milkymist RGB Framebuffer
++
+ if ARCH_OMAP
+ 	source "drivers/video/omap/Kconfig"
+ endif
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index 06eec7b..6bca8c1 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -112,6 +112,7 @@ obj-$(CONFIG_FB_IBM_GXT4500)	  += gxt4500.o
+ obj-$(CONFIG_FB_PS3)		  += ps3fb.o
+ obj-$(CONFIG_FB_SM501)            += sm501fb.o
+ obj-$(CONFIG_FB_XILINX)           += xilinxfb.o
++obj-$(CONFIG_FB_MILKYMIST)        += milkymistfb.o
+ obj-$(CONFIG_FB_OMAP)             += omap/
+ 
+ # Platform or fallback drivers go here
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index e58c87b..0b21a84 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -440,6 +440,25 @@ static irqreturn_t fb_vbl_handler(int irq, void *dev_id)
  	return IRQ_HANDLED;
  }
  #endif
@@ -7224,7 +7503,7 @@ diff -ruN linux-2.6.23/drivers/video/console/fbcon.c linux-2.6.23-lm32/drivers/v
  	
  static void cursor_timer_handler(unsigned long dev_addr)
  {
-@@ -447,6 +466,9 @@
+@@ -447,6 +466,9 @@ static void cursor_timer_handler(unsigned long dev_addr)
  	struct fbcon_ops *ops = info->fbcon_par;
  
  	schedule_work(&info->queue);
@@ -7234,41 +7513,12 @@ diff -ruN linux-2.6.23/drivers/video/console/fbcon.c linux-2.6.23-lm32/drivers/v
  	mod_timer(&ops->cursor_timer, jiffies + HZ/5);
  }
  
-diff -ruN linux-2.6.23/drivers/video/Kconfig linux-2.6.23-lm32/drivers/video/Kconfig
---- linux-2.6.23/drivers/video/Kconfig	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/video/Kconfig	2009-12-22 02:23:42.000000000 +0100
-@@ -1833,6 +1833,16 @@
- 	  framebuffer. ML300 carries a 640*480 LCD display on the board,
- 	  ML403 uses a standard DB15 VGA connector.
- 
-+config FB_MILKYMIST
-+	bool "Milkymist framebuffer support"
-+	depends on (FB = y) && PLAT_MILKYMIST
-+	select FB_SYS_FILLRECT
-+	select FB_SYS_COPYAREA
-+	select FB_SYS_IMAGEBLIT
-+	select FB_SYS_FOPS
-+	help
-+	  Say Y here to enable support for Milkymist RGB Framebuffer
-+
- if ARCH_OMAP
- 	source "drivers/video/omap/Kconfig"
- endif
-diff -ruN linux-2.6.23/drivers/video/Makefile linux-2.6.23-lm32/drivers/video/Makefile
---- linux-2.6.23/drivers/video/Makefile	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/drivers/video/Makefile	2009-12-22 02:23:42.000000000 +0100
-@@ -112,6 +112,7 @@
- obj-$(CONFIG_FB_PS3)		  += ps3fb.o
- obj-$(CONFIG_FB_SM501)            += sm501fb.o
- obj-$(CONFIG_FB_XILINX)           += xilinxfb.o
-+obj-$(CONFIG_FB_MILKYMIST)        += milkymistfb.o
- obj-$(CONFIG_FB_OMAP)             += omap/
- 
- # Platform or fallback drivers go here
-diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/video/milkymistfb.c
---- linux-2.6.23/drivers/video/milkymistfb.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/drivers/video/milkymistfb.c	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,540 @@
+diff --git a/drivers/video/milkymistfb.c b/drivers/video/milkymistfb.c
+new file mode 100644
+index 0000000..c94d717
+--- /dev/null
++++ b/drivers/video/milkymistfb.c
+@@ -0,0 +1,686 @@
 +/*
 + *  linux/drivers/video/milkymistfb.c -- Milkymist frame buffer device
 + *
@@ -7296,7 +7546,7 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +     *  The default can be overridden if the driver is compiled as a module
 +     */
 +
-+#define VIDEOMEMSIZE	(1*1024*1024)	/* 1 MB */
++#define VIDEOMEMSIZE	(1024*800*2)	/* 1.6 MB */
 +
 +#define	MMPTR(x)		(*((volatile unsigned int *)(x)))
 +#define	CSR_VGA_RESET		MMPTR(0x80003000)
@@ -7318,35 +7568,155 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +
 +#define	CSR_VGA_BURST_COUNT	MMPTR(0x8000302C)
 +
++#define	CSR_VGA_SOURCE_CLOCK	MMPTR(0x80003030)
++#define	VGA_CLOCK_VGA		(0x00)
++#define	VGA_CLOCK_SVGA		(0x01)
++#define	VGA_CLOCK_XGA		(0x02)
++
 +
 +static void *videomemory;
 +static u_long videomemorysize = VIDEOMEMSIZE;
 +module_param(videomemorysize, ulong, 0);
 +
-+static struct fb_var_screeninfo milkymistfb_default __initdata = {
-+	.xres =		640,
-+	.yres =		480,
-+	.xres_virtual =	640,
-+	.yres_virtual =	480,
-+	.bits_per_pixel = 16,
-+	.red =		{11, 5, 0 },
-+      	.green =	{ 5, 6, 0 },
-+      	.blue =		{ 0, 5, 0 },
-+      	.activate =	FB_ACTIVATE_NOW,
-+      	.height =	-1,
-+      	.width =	-1,
-+      	.vmode =	FB_VMODE_NONINTERLACED,
++static unsigned milkymistfb_def_mode = 1;
++
++/*
++ *    Predefine Video Modes
++ */
++struct csr_vga {
++	unsigned int csr_vga_hres;
++	unsigned int csr_vga_hsync_start;
++	unsigned int csr_vga_hsync_end;
++	unsigned int csr_vga_hscan;
++	unsigned int csr_vga_vres;
++	unsigned int csr_vga_vsync_start;
++	unsigned int csr_vga_vsync_end;
++	unsigned int csr_vga_vscan;
++	unsigned int csr_vga_source_clock;
 +};
 +
-+static struct fb_fix_screeninfo milkymistfb_fix __initdata = {
-+	.id =		"MilkymistFB",
-+	.type =		FB_TYPE_PACKED_PIXELS,
-+	.visual =	FB_VISUAL_TRUECOLOR,
-+	.smem_len = 	(640*480*2),
-+	.line_length =	640*2,
-+	.accel =	FB_ACCEL_NONE,
++static const struct {
++	const char *name;
++	struct fb_var_screeninfo var;
++	struct fb_fix_screeninfo fix;
++	struct csr_vga vga;
++} milkymistfb_predefined[] = {
++	{
++		/* autodetect mode */
++		.name	= "Autodetect",
++	}, {
++		/* 640x480, 31.29, KHz 59.8 Hz, 25 MHz PixClock */
++		.name	= "640x480",
++		.var	= {
++			.xres =		640,
++			.yres =		480,
++			.xres_virtual =	640,
++			.yres_virtual =	480,
++			.bits_per_pixel = 16,
++			.red =		{11, 5, 0 },
++   		   	.green =	{ 5, 6, 0 },
++ 		     	.blue =		{ 0, 5, 0 },
++  		    	.activate =	FB_ACTIVATE_NOW,
++		      	.height =	-1,
++		      	.width =	-1,
++      			.vmode =	FB_VMODE_NONINTERLACED,
++		},
++		.fix	= {
++			.id =		"MilkymistFB",
++			.type =		FB_TYPE_PACKED_PIXELS,
++			.visual =	FB_VISUAL_TRUECOLOR,
++			.smem_len = 	(640*480*2),
++			.line_length =	640*2,
++			.accel =	FB_ACCEL_NONE,
++		},
++		.vga= {
++			.csr_vga_hres =	640,
++			.csr_vga_hsync_start = 656,
++			.csr_vga_hsync_end = 752,
++			.csr_vga_hscan = 799,
++			.csr_vga_vres = 480,
++			.csr_vga_vsync_start = 491,
++			.csr_vga_vsync_end = 493,
++			.csr_vga_vscan = 523,
++			.csr_vga_source_clock = VGA_CLOCK_VGA,
++		}
++	}, {
++		/* 800x600, 48 KHz, 72.2 Hz, 50 MHz PixClock */
++		.name	= "800x600",
++		.var	= {
++			.xres =		800,
++			.yres =		600,
++			.xres_virtual =	800,
++			.yres_virtual =	600,
++			.bits_per_pixel = 16,
++			.red =		{11, 5, 0 },
++   		   	.green =	{ 5, 6, 0 },
++ 		     	.blue =		{ 0, 5, 0 },
++  		    	.activate =	FB_ACTIVATE_NOW,
++		      	.height =	-1,
++		      	.width =	-1,
++      			.vmode =	FB_VMODE_NONINTERLACED,
++		},
++		.fix	= {
++			.id =		"MilkymistFB",
++			.type =		FB_TYPE_PACKED_PIXELS,
++			.visual =	FB_VISUAL_TRUECOLOR,
++			.smem_len = 	(800*600*2),
++			.line_length =	800*2,
++			.accel =	FB_ACCEL_NONE,
++		},
++		.vga= {
++			.csr_vga_hres =	800,
++			.csr_vga_hsync_start = 848,
++			.csr_vga_hsync_end = 976,
++			.csr_vga_hscan = 1040,
++			.csr_vga_vres = 600,
++			.csr_vga_vsync_start = 637,
++			.csr_vga_vsync_end = 643,
++			.csr_vga_vscan = 666,
++			.csr_vga_source_clock = VGA_CLOCK_SVGA,
++		}
++	}, {
++		/* 1024x768, 48.363 KHz, 60 Hz, 65 MHz PixClock */
++		.name	= "1024x768",
++		.var	= {
++			.xres =		1024,
++			.yres =		768,
++			.xres_virtual =	1024,
++			.yres_virtual =	768,
++			.bits_per_pixel = 16,
++			.red =		{11, 5, 0 },
++   		   	.green =	{ 5, 6, 0 },
++ 		     	.blue =		{ 0, 5, 0 },
++  		    	.activate =	FB_ACTIVATE_NOW,
++		      	.height =	-1,
++		      	.width =	-1,
++      			.vmode =	FB_VMODE_NONINTERLACED,
++		},
++		.fix	= {
++			.id =		"MilkymistFB",
++			.type =		FB_TYPE_PACKED_PIXELS,
++			.visual =	FB_VISUAL_TRUECOLOR,
++			.smem_len = 	(1024*768*2),
++			.line_length =	1024*2,
++			.accel =	FB_ACCEL_NONE,
++		},
++		.vga= {
++			.csr_vga_hres =	1024,
++			.csr_vga_hsync_start = 1040,
++			.csr_vga_hsync_end = 1184,
++			.csr_vga_hscan = 1344,
++			.csr_vga_vres = 768,
++			.csr_vga_vsync_start = 771,
++			.csr_vga_vsync_end = 777,
++			.csr_vga_vscan = 806,
++			.csr_vga_source_clock = VGA_CLOCK_XGA,
++		}
++	}
 +};
 +
++#define	NUM_TOTAL_MODES	ARRAY_SIZE(milkymistfb_predefined)
++ 
 +static int milkymistfb_enable __initdata = 0;	/* disabled by default */
 +module_param(milkymistfb_enable, bool, 0);
 +
@@ -7656,7 +8026,8 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +#ifndef MODULE
 +static int __init milkymistfb_setup(char *options)
 +{
-+	char *this_opt;
++	char *this_opt, s[32];
++	int i;
 +
 +	milkymistfb_enable = 1;
 +
@@ -7666,6 +8037,11 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +	while ((this_opt = strsep(&options, ",")) != NULL) {
 +		if (!*this_opt)
 +			continue;
++		for (i=0; i<NUM_TOTAL_MODES; ++i) {
++			sprintf(s, "mode:%s", milkymistfb_predefined[i].name);
++			if (!strcmp(this_opt, s))
++				milkymistfb_def_mode = i;
++		}
 +		if (!strncmp(this_opt, "disable", 7))
 +			milkymistfb_enable = 0;
 +	}
@@ -7680,6 +8056,7 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +static int __init milkymistfb_probe(struct platform_device *dev)
 +{
 +	struct fb_info *info;
++	struct csr_vga *vga;
 +	int retval = -ENOMEM;
 +
 +	/*
@@ -7703,11 +8080,20 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +	info->screen_base = (char __iomem *)videomemory;
 +	info->fbops = &milkymistfb_ops;
 +
-+	info->var = milkymistfb_default;
-+	info->fix = milkymistfb_fix;
++	CSR_VGA_RESET = 1;
++	vga = &milkymistfb_predefined[milkymistfb_def_mode].vga;
++	CSR_VGA_SOURCE_CLOCK = vga->csr_vga_source_clock;
++	if ( CSR_VGA_SOURCE_CLOCK != vga->csr_vga_source_clock ) {
++		milkymistfb_def_mode = 1;
++		vga = &milkymistfb_predefined[milkymistfb_def_mode].vga;
++	}
++
++	info->var = milkymistfb_predefined[milkymistfb_def_mode].var;
++	info->fix = milkymistfb_predefined[milkymistfb_def_mode].fix;
 +	info->pseudo_palette = info->par;
 +	info->par = NULL;
 +	info->flags = FBINFO_FLAG_DEFAULT;
++	info->fix.smem_start = (char *)videomemory;
 +
 +	retval = fb_alloc_cmap(&info->cmap, 256, 0);
 +	if (retval < 0)
@@ -7722,10 +8108,20 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +	       "fb%d: Milkymist frame buffer at %X, size %ld k\n",
 +	       info->node, videomemory, videomemorysize >> 10);
 +	printk(KERN_INFO
-+	       "fb%d: mode is 640x480x16\n",
-+	       info->node);
++	       "fb%d: mode is %s\n",
++		info->node,
++		milkymistfb_predefined[milkymistfb_def_mode].name);
 +
 +	CSR_VGA_BASEADDRESS = videomemory;
++	CSR_VGA_HRES = vga->csr_vga_hres;
++	CSR_VGA_HSYNC_START = vga->csr_vga_hsync_start;
++	CSR_VGA_HSYNC_END = vga->csr_vga_hsync_end;
++	CSR_VGA_HSCAN = vga->csr_vga_hscan;
++	CSR_VGA_VRES = vga->csr_vga_vres;
++	CSR_VGA_VSYNC_START = vga->csr_vga_vsync_start;
++	CSR_VGA_VSYNC_END = vga->csr_vga_vsync_end;
++	CSR_VGA_VSCAN = vga->csr_vga_vscan;
++	CSR_VGA_BURST_COUNT = (vga->csr_vga_hres*vga->csr_vga_vres*16)/(4*64);
 +	CSR_VGA_RESET = 0;
 +       
 +	return 0;
@@ -7809,10 +8205,24 @@ diff -ruN linux-2.6.23/drivers/video/milkymistfb.c linux-2.6.23-lm32/drivers/vid
 +
 +MODULE_LICENSE("GPL");
 +#endif				/* MODULE */
-diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdpic.c
---- linux-2.6.23/fs/binfmt_elf_fdpic.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/fs/binfmt_elf_fdpic.c	2009-12-22 02:23:42.000000000 +0100
-@@ -157,6 +157,62 @@
+diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
+index d4fc609..69739a2 100644
+--- a/fs/Kconfig.binfmt
++++ b/fs/Kconfig.binfmt
+@@ -26,7 +26,7 @@ config BINFMT_ELF
+ config BINFMT_ELF_FDPIC
+ 	bool "Kernel support for FDPIC ELF binaries"
+ 	default y
+-	depends on (FRV || BLACKFIN)
++	depends on (FRV || BLACKFIN || LM32)
+ 	help
+ 	  ELF FDPIC binaries are based on ELF, but allow the individual load
+ 	  segments of a binary to be located in memory independently of each
+diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+index 2f5d8db..dd4989b 100644
+--- a/fs/binfmt_elf_fdpic.c
++++ b/fs/binfmt_elf_fdpic.c
+@@ -157,6 +157,62 @@ static int elf_fdpic_fetch_phdrs(struct elf_fdpic_params *params,
  	return 0;
  }
  
@@ -7875,7 +8285,7 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  /*****************************************************************************/
  /*
   * load an fdpic binary into various bits of memory
-@@ -423,6 +479,161 @@
+@@ -423,6 +479,161 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm,
  			    dynaddr);
  #endif
  
@@ -8037,7 +8447,7 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  	/* everything is now ready... get the userspace context ready to roll */
  	entryaddr = interp_params.entry_addr ?: exec_params.entry_addr;
  	start_thread(regs, entryaddr, current->mm->start_stack);
-@@ -1443,6 +1654,7 @@
+@@ -1443,6 +1654,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
  	t->num_notes++;
  	sz += notesize(&t->notes[0]);
  
@@ -8045,7 +8455,7 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  	t->prstatus.pr_fpvalid = elf_core_copy_task_fpregs(p, NULL, &t->fpu);
  	if (t->prstatus.pr_fpvalid) {
  		fill_note(&t->notes[1], "CORE", NT_PRFPREG, sizeof(t->fpu),
-@@ -1450,6 +1662,7 @@
+@@ -1450,6 +1662,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
  		t->num_notes++;
  		sz += notesize(&t->notes[1]);
  	}
@@ -8053,7 +8463,7 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  
  #ifdef ELF_CORE_COPY_XFPREGS
  	if (elf_core_copy_task_xfpregs(p, &t->xfpu)) {
-@@ -1571,7 +1784,9 @@
+@@ -1571,7 +1784,9 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
   	struct task_struct *g, *p;
   	LIST_HEAD(thread_list);
   	struct list_head *t;
@@ -8063,7 +8473,7 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  #ifdef ELF_CORE_COPY_XFPREGS
  	elf_fpxregset_t *xfpu = NULL;
  #endif
-@@ -1607,9 +1822,11 @@
+@@ -1607,9 +1822,11 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
  	notes = kmalloc(NUM_NOTES * sizeof(struct memelfnote), GFP_KERNEL);
  	if (!notes)
  		goto cleanup;
@@ -8075,7 +8485,7 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  #ifdef ELF_CORE_COPY_XFPREGS
  	xfpu = kmalloc(sizeof(*xfpu), GFP_KERNEL);
  	if (!xfpu)
-@@ -1682,11 +1899,13 @@
+@@ -1682,11 +1899,13 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
  	fill_note(&notes[numnote++], "CORE", NT_AUXV,
  		  i * sizeof(elf_addr_t), auxv);
  
@@ -8090,7 +8500,7 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  #ifdef ELF_CORE_COPY_XFPREGS
  	if (elf_core_copy_task_xfpregs(current, xfpu))
  		fill_note(notes + numnote++,
-@@ -1808,7 +2027,9 @@
+@@ -1808,7 +2027,9 @@ cleanup:
  	kfree(prstatus);
  	kfree(psinfo);
  	kfree(notes);
@@ -8100,21 +8510,22 @@ diff -ruN linux-2.6.23/fs/binfmt_elf_fdpic.c linux-2.6.23-lm32/fs/binfmt_elf_fdp
  #ifdef ELF_CORE_COPY_XFPREGS
  	kfree(xfpu);
  #endif
-diff -ruN linux-2.6.23/fs/Kconfig.binfmt linux-2.6.23-lm32/fs/Kconfig.binfmt
---- linux-2.6.23/fs/Kconfig.binfmt	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/fs/Kconfig.binfmt	2009-12-22 02:23:42.000000000 +0100
-@@ -26,7 +26,7 @@
- config BINFMT_ELF_FDPIC
- 	bool "Kernel support for FDPIC ELF binaries"
- 	default y
--	depends on (FRV || BLACKFIN)
-+	depends on (FRV || BLACKFIN || LM32)
- 	help
- 	  ELF FDPIC binaries are based on ELF, but allow the individual load
- 	  segments of a binary to be located in memory independently of each
-diff -ruN linux-2.6.23/include/asm-lm32/a.out.h linux-2.6.23-lm32/include/asm-lm32/a.out.h
---- linux-2.6.23/include/asm-lm32/a.out.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/a.out.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/Kbuild b/include/asm-lm32/Kbuild
+new file mode 100644
+index 0000000..da18df3
+--- /dev/null
++++ b/include/asm-lm32/Kbuild
+@@ -0,0 +1,5 @@
++include include/asm-generic/Kbuild.asm
++
++header-y += io.h
++header-y += registers.h
++header-y += traps.h
+diff --git a/include/asm-lm32/a.out.h b/include/asm-lm32/a.out.h
+new file mode 100644
+index 0000000..4f71414
+--- /dev/null
++++ b/include/asm-lm32/a.out.h
 @@ -0,0 +1,31 @@
 +/*
 + * Based on:
@@ -8147,9 +8558,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/a.out.h linux-2.6.23-lm32/include/asm-lm
 +#endif
 +
 +#endif /* _LM32_ASM_A_OUT_H */
-diff -ruN linux-2.6.23/include/asm-lm32/atomic.h linux-2.6.23-lm32/include/asm-lm32/atomic.h
---- linux-2.6.23/include/asm-lm32/atomic.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/atomic.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/atomic.h b/include/asm-lm32/atomic.h
+new file mode 100644
+index 0000000..72e8a6b
+--- /dev/null
++++ b/include/asm-lm32/atomic.h
 @@ -0,0 +1,193 @@
 +/*
 + * (C) Copyright 2007
@@ -8344,15 +8757,19 @@ diff -ruN linux-2.6.23/include/asm-lm32/atomic.h linux-2.6.23-lm32/include/asm-l
 +
 +#include <asm-generic/atomic.h>
 +#endif /* _LM32_ATOMIC_H */
-diff -ruN linux-2.6.23/include/asm-lm32/auxvec.h linux-2.6.23-lm32/include/asm-lm32/auxvec.h
---- linux-2.6.23/include/asm-lm32/auxvec.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/auxvec.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/auxvec.h b/include/asm-lm32/auxvec.h
+new file mode 100644
+index 0000000..35c9c30
+--- /dev/null
++++ b/include/asm-lm32/auxvec.h
 @@ -0,0 +1,2 @@
 +/* keep me */
 +
-diff -ruN linux-2.6.23/include/asm-lm32/bitops.h linux-2.6.23-lm32/include/asm-lm32/bitops.h
---- linux-2.6.23/include/asm-lm32/bitops.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/bitops.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/bitops.h b/include/asm-lm32/bitops.h
+new file mode 100644
+index 0000000..1b64792
+--- /dev/null
++++ b/include/asm-lm32/bitops.h
 @@ -0,0 +1,11 @@
 +#ifndef _LM32_ASM_BITOPS_H
 +#define _LM32_ASM_BITOPS_H
@@ -8365,20 +8782,26 @@ diff -ruN linux-2.6.23/include/asm-lm32/bitops.h linux-2.6.23-lm32/include/asm-l
 +#include <asm-generic/bitops.h>
 +
 +#endif /* _LM32_BITOPS_H */
-diff -ruN linux-2.6.23/include/asm-lm32/bootinfo.h linux-2.6.23-lm32/include/asm-lm32/bootinfo.h
---- linux-2.6.23/include/asm-lm32/bootinfo.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/bootinfo.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/bootinfo.h b/include/asm-lm32/bootinfo.h
+new file mode 100644
+index 0000000..35c9c30
+--- /dev/null
++++ b/include/asm-lm32/bootinfo.h
 @@ -0,0 +1,2 @@
 +/* keep me */
 +
-diff -ruN linux-2.6.23/include/asm-lm32/bug.h linux-2.6.23-lm32/include/asm-lm32/bug.h
---- linux-2.6.23/include/asm-lm32/bug.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/bug.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/bug.h b/include/asm-lm32/bug.h
+new file mode 100644
+index 0000000..b12fd89
+--- /dev/null
++++ b/include/asm-lm32/bug.h
 @@ -0,0 +1 @@
 +#include <asm-generic/bug.h>
-diff -ruN linux-2.6.23/include/asm-lm32/bugs.h linux-2.6.23-lm32/include/asm-lm32/bugs.h
---- linux-2.6.23/include/asm-lm32/bugs.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/bugs.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/bugs.h b/include/asm-lm32/bugs.h
+new file mode 100644
+index 0000000..142ebf4
+--- /dev/null
++++ b/include/asm-lm32/bugs.h
 @@ -0,0 +1,11 @@
 +#ifndef _LM32_ASM_BUGS_H
 +#define _LM32_ASM_BUGS_H
@@ -8391,9 +8814,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/bugs.h linux-2.6.23-lm32/include/asm-lm3
 +}
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/byteorder.h linux-2.6.23-lm32/include/asm-lm32/byteorder.h
---- linux-2.6.23/include/asm-lm32/byteorder.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/byteorder.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/byteorder.h b/include/asm-lm32/byteorder.h
+new file mode 100644
+index 0000000..5189dc4
+--- /dev/null
++++ b/include/asm-lm32/byteorder.h
 @@ -0,0 +1,16 @@
 +#ifndef _LM32_ASM_BYTEORDER_H
 +#define _LM32_ASM_BYTEORDER_H
@@ -8411,9 +8836,49 @@ diff -ruN linux-2.6.23/include/asm-lm32/byteorder.h linux-2.6.23-lm32/include/as
 +#include <linux/byteorder/big_endian.h>
 +
 +#endif /* _LM32_BYTEORDER_H */
-diff -ruN linux-2.6.23/include/asm-lm32/cacheflush.h linux-2.6.23-lm32/include/asm-lm32/cacheflush.h
---- linux-2.6.23/include/asm-lm32/cacheflush.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/cacheflush.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/cache.h b/include/asm-lm32/cache.h
+new file mode 100644
+index 0000000..3862855
+--- /dev/null
++++ b/include/asm-lm32/cache.h
+@@ -0,0 +1,32 @@
++/*
++ * (C) Copyright 2007
++ *     Theobroma Systems <www.theobroma-systems.com>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef __ASM_LM32_CACHE_H
++#define __ASM_LM32_CACHE_H
++
++/* 32 byte cache lines */
++#define L1_CACHE_BYTES 32
++#define L1_CACHE_SHIFT 5
++
++#endif
++
+diff --git a/include/asm-lm32/cacheflush.h b/include/asm-lm32/cacheflush.h
+new file mode 100644
+index 0000000..120afa6
+--- /dev/null
++++ b/include/asm-lm32/cacheflush.h
 @@ -0,0 +1,58 @@
 +/*
 + * (C) Copyright 2007
@@ -8473,45 +8938,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/cacheflush.h linux-2.6.23-lm32/include/a
 +}
 +
 +#endif /* _LM32_ASM_CACHEFLUSH_H */
-diff -ruN linux-2.6.23/include/asm-lm32/cache.h linux-2.6.23-lm32/include/asm-lm32/cache.h
---- linux-2.6.23/include/asm-lm32/cache.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/cache.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,32 @@
-+/*
-+ * (C) Copyright 2007
-+ *     Theobroma Systems <www.theobroma-systems.com>
-+ *
-+ * See file CREDITS for list of people who contributed to this
-+ * project.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ */
-+
-+#ifndef __ASM_LM32_CACHE_H
-+#define __ASM_LM32_CACHE_H
-+
-+/* 32 byte cache lines */
-+#define L1_CACHE_BYTES 32
-+#define L1_CACHE_SHIFT 5
-+
-+#endif
-+
-diff -ruN linux-2.6.23/include/asm-lm32/checksum.h linux-2.6.23-lm32/include/asm-lm32/checksum.h
---- linux-2.6.23/include/asm-lm32/checksum.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/checksum.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/checksum.h b/include/asm-lm32/checksum.h
+new file mode 100644
+index 0000000..8781efe
+--- /dev/null
++++ b/include/asm-lm32/checksum.h
 @@ -0,0 +1,157 @@
 +/*
 + * (C) Copyright 2007
@@ -8670,14 +9101,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/checksum.h linux-2.6.23-lm32/include/asm
 +//TODO activate _HAVE_ARCH_IPV6_CSUM
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/cputime.h linux-2.6.23-lm32/include/asm-lm32/cputime.h
---- linux-2.6.23/include/asm-lm32/cputime.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/cputime.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/cputime.h b/include/asm-lm32/cputime.h
+new file mode 100644
+index 0000000..6d68ad7
+--- /dev/null
++++ b/include/asm-lm32/cputime.h
 @@ -0,0 +1 @@
 +#include <asm-generic/cputime.h>
-diff -ruN linux-2.6.23/include/asm-lm32/current.h linux-2.6.23-lm32/include/asm-lm32/current.h
---- linux-2.6.23/include/asm-lm32/current.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/current.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/current.h b/include/asm-lm32/current.h
+new file mode 100644
+index 0000000..7d262e8
+--- /dev/null
++++ b/include/asm-lm32/current.h
 @@ -0,0 +1,25 @@
 +/*
 + * Based on:
@@ -8704,9 +9139,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/current.h linux-2.6.23-lm32/include/asm-
 +#define	current	(get_current())
 +
 +#endif /* _LM32_ASM_CURRENT_H */
-diff -ruN linux-2.6.23/include/asm-lm32/delay.h linux-2.6.23-lm32/include/asm-lm32/delay.h
---- linux-2.6.23/include/asm-lm32/delay.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/delay.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/delay.h b/include/asm-lm32/delay.h
+new file mode 100644
+index 0000000..d146365
+--- /dev/null
++++ b/include/asm-lm32/delay.h
 @@ -0,0 +1,76 @@
 +/*
 + * (C) Copyright 2007
@@ -8784,19 +9221,39 @@ diff -ruN linux-2.6.23/include/asm-lm32/delay.h linux-2.6.23-lm32/include/asm-lm
 +}
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/device.h linux-2.6.23-lm32/include/asm-lm32/device.h
---- linux-2.6.23/include/asm-lm32/device.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/device.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/device.h b/include/asm-lm32/device.h
+new file mode 100644
+index 0000000..f0a4c25
+--- /dev/null
++++ b/include/asm-lm32/device.h
 @@ -0,0 +1 @@
 +#include <asm-generic/device.h>
-diff -ruN linux-2.6.23/include/asm-lm32/div64.h linux-2.6.23-lm32/include/asm-lm32/div64.h
---- linux-2.6.23/include/asm-lm32/div64.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/div64.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/div64.h b/include/asm-lm32/div64.h
+new file mode 100644
+index 0000000..6cd978c
+--- /dev/null
++++ b/include/asm-lm32/div64.h
 @@ -0,0 +1 @@
 +#include <asm-generic/div64.h>
-diff -ruN linux-2.6.23/include/asm-lm32/dma.h linux-2.6.23-lm32/include/asm-lm32/dma.h
---- linux-2.6.23/include/asm-lm32/dma.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/dma.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/dma-mapping.h b/include/asm-lm32/dma-mapping.h
+new file mode 100644
+index 0000000..396656e
+--- /dev/null
++++ b/include/asm-lm32/dma-mapping.h
+@@ -0,0 +1,8 @@
++#ifndef _LM32_ASM_DMA_MAPPING_H
++#define _LM32_ASM_DMA_MAPPING_H
++
++/* no DMA at the moment */
++#include <asm/scatterlist.h>
++#include <asm-generic/dma-mapping.h>
++
++#endif  /* _LM32_ASM_DMA_MAPPING_H */
+diff --git a/include/asm-lm32/dma.h b/include/asm-lm32/dma.h
+new file mode 100644
+index 0000000..1a9818c
+--- /dev/null
++++ b/include/asm-lm32/dma.h
 @@ -0,0 +1,19 @@
 +/*
 + * Based on:
@@ -8817,21 +9274,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/dma.h linux-2.6.23-lm32/include/asm-lm32
 +//extern void free_dma(unsigned int dmanr);	/* release it again */
 + 
 +#endif /* _LM32_ASM_DMA_H */
-diff -ruN linux-2.6.23/include/asm-lm32/dma-mapping.h linux-2.6.23-lm32/include/asm-lm32/dma-mapping.h
---- linux-2.6.23/include/asm-lm32/dma-mapping.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/dma-mapping.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,8 @@
-+#ifndef _LM32_ASM_DMA_MAPPING_H
-+#define _LM32_ASM_DMA_MAPPING_H
-+
-+/* no DMA at the moment */
-+#include <asm/scatterlist.h>
-+#include <asm-generic/dma-mapping.h>
-+
-+#endif  /* _LM32_ASM_DMA_MAPPING_H */
-diff -ruN linux-2.6.23/include/asm-lm32/elf.h linux-2.6.23-lm32/include/asm-lm32/elf.h
---- linux-2.6.23/include/asm-lm32/elf.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/elf.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/elf.h b/include/asm-lm32/elf.h
+new file mode 100644
+index 0000000..dd6eb92
+--- /dev/null
++++ b/include/asm-lm32/elf.h
 @@ -0,0 +1,115 @@
 +/*
 + * (C) Copyright 2007
@@ -8948,19 +9395,25 @@ diff -ruN linux-2.6.23/include/asm-lm32/elf.h linux-2.6.23-lm32/include/asm-lm32
 +//#endif
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/emergency-restart.h linux-2.6.23-lm32/include/asm-lm32/emergency-restart.h
---- linux-2.6.23/include/asm-lm32/emergency-restart.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/emergency-restart.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/emergency-restart.h b/include/asm-lm32/emergency-restart.h
+new file mode 100644
+index 0000000..3711bd9
+--- /dev/null
++++ b/include/asm-lm32/emergency-restart.h
 @@ -0,0 +1 @@
 +#include <asm-generic/emergency-restart.h>
-diff -ruN linux-2.6.23/include/asm-lm32/errno.h linux-2.6.23-lm32/include/asm-lm32/errno.h
---- linux-2.6.23/include/asm-lm32/errno.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/errno.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/errno.h b/include/asm-lm32/errno.h
+new file mode 100644
+index 0000000..4c82b50
+--- /dev/null
++++ b/include/asm-lm32/errno.h
 @@ -0,0 +1 @@
 +#include <asm-generic/errno.h>
-diff -ruN linux-2.6.23/include/asm-lm32/fb.h linux-2.6.23-lm32/include/asm-lm32/fb.h
---- linux-2.6.23/include/asm-lm32/fb.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/fb.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/fb.h b/include/asm-lm32/fb.h
+new file mode 100644
+index 0000000..fa9bbb9
+--- /dev/null
++++ b/include/asm-lm32/fb.h
 @@ -0,0 +1,13 @@
 +#ifndef _ASM_FB_H_
 +#define _ASM_FB_H_
@@ -8975,14 +9428,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/fb.h linux-2.6.23-lm32/include/asm-lm32/
 +}
 +
 +#endif /* _ASM_FB_H_ */
-diff -ruN linux-2.6.23/include/asm-lm32/fcntl.h linux-2.6.23-lm32/include/asm-lm32/fcntl.h
---- linux-2.6.23/include/asm-lm32/fcntl.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/fcntl.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/fcntl.h b/include/asm-lm32/fcntl.h
+new file mode 100644
+index 0000000..46ab12d
+--- /dev/null
++++ b/include/asm-lm32/fcntl.h
 @@ -0,0 +1 @@
 +#include <asm-generic/fcntl.h>
-diff -ruN linux-2.6.23/include/asm-lm32/flat.h linux-2.6.23-lm32/include/asm-lm32/flat.h
---- linux-2.6.23/include/asm-lm32/flat.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/flat.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/flat.h b/include/asm-lm32/flat.h
+new file mode 100644
+index 0000000..ca08c80
+--- /dev/null
++++ b/include/asm-lm32/flat.h
 @@ -0,0 +1,17 @@
 +/*
 + * Based on:
@@ -9001,14 +9458,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/flat.h linux-2.6.23-lm32/include/asm-lm3
 +#define	flat_get_relocate_addr(rel)		(rel)
 +
 +#endif /* _ASM_LM32_FLAT_H__ */
-diff -ruN linux-2.6.23/include/asm-lm32/futex.h linux-2.6.23-lm32/include/asm-lm32/futex.h
---- linux-2.6.23/include/asm-lm32/futex.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/futex.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/futex.h b/include/asm-lm32/futex.h
+new file mode 100644
+index 0000000..0b74582
+--- /dev/null
++++ b/include/asm-lm32/futex.h
 @@ -0,0 +1 @@
 +#include <asm-generic/futex.h>
-diff -ruN linux-2.6.23/include/asm-lm32/hardirq.h linux-2.6.23-lm32/include/asm-lm32/hardirq.h
---- linux-2.6.23/include/asm-lm32/hardirq.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/hardirq.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/hardirq.h b/include/asm-lm32/hardirq.h
+new file mode 100644
+index 0000000..fb3b938
+--- /dev/null
++++ b/include/asm-lm32/hardirq.h
 @@ -0,0 +1,30 @@
 +/*
 + * Based on:
@@ -9040,9 +9501,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/hardirq.h linux-2.6.23-lm32/include/asm-
 +#endif
 +
 +#endif /* _LM32_ASM_HARDIRQ_H */
-diff -ruN linux-2.6.23/include/asm-lm32/hw_irq.h linux-2.6.23-lm32/include/asm-lm32/hw_irq.h
---- linux-2.6.23/include/asm-lm32/hw_irq.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/hw_irq.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/hw_irq.h b/include/asm-lm32/hw_irq.h
+new file mode 100644
+index 0000000..cdf44be
+--- /dev/null
++++ b/include/asm-lm32/hw_irq.h
 @@ -0,0 +1,23 @@
 +/*
 + * (C) Copyright 2007
@@ -9067,103 +9530,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/hw_irq.h linux-2.6.23-lm32/include/asm-l
 + * MA 02111-1307 USA
 + */
 +
-diff -ruN linux-2.6.23/include/asm-lm32/ioctl.h linux-2.6.23-lm32/include/asm-lm32/ioctl.h
---- linux-2.6.23/include/asm-lm32/ioctl.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/ioctl.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1 @@
-+#include <asm-generic/ioctl.h>
-diff -ruN linux-2.6.23/include/asm-lm32/ioctls.h linux-2.6.23-lm32/include/asm-lm32/ioctls.h
---- linux-2.6.23/include/asm-lm32/ioctls.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/ioctls.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,85 @@
-+/*
-+ * Based on:
-+ * include/asm-arm/ioctls.h
-+ */
-+
-+#ifndef _ASM_LM32_IOCTLS_H
-+#define _ASM_LM32_IOCTLS_H
-+
-+#include <asm/ioctl.h>
-+
-+/* 0x54 is just a magic number to make these relatively unique ('T') */
-+
-+#define TCGETS		0x5401
-+#define TCSETS		0x5402
-+#define TCSETSW		0x5403
-+#define TCSETSF		0x5404
-+#define TCGETA		0x5405
-+#define TCSETA		0x5406
-+#define TCSETAW		0x5407
-+#define TCSETAF		0x5408
-+#define TCSBRK		0x5409
-+#define TCXONC		0x540A
-+#define TCFLSH		0x540B
-+#define TIOCEXCL	0x540C
-+#define TIOCNXCL	0x540D
-+#define TIOCSCTTY	0x540E
-+#define TIOCGPGRP	0x540F
-+#define TIOCSPGRP	0x5410
-+#define TIOCOUTQ	0x5411
-+#define TIOCSTI		0x5412
-+#define TIOCGWINSZ	0x5413
-+#define TIOCSWINSZ	0x5414
-+#define TIOCMGET	0x5415
-+#define TIOCMBIS	0x5416
-+#define TIOCMBIC	0x5417
-+#define TIOCMSET	0x5418
-+#define TIOCGSOFTCAR	0x5419
-+#define TIOCSSOFTCAR	0x541A
-+#define FIONREAD	0x541B
-+#define TIOCINQ		FIONREAD
-+#define TIOCLINUX	0x541C
-+#define TIOCCONS	0x541D
-+#define TIOCGSERIAL	0x541E
-+#define TIOCSSERIAL	0x541F
-+#define TIOCPKT		0x5420
-+#define FIONBIO		0x5421
-+#define TIOCNOTTY	0x5422
-+#define TIOCSETD	0x5423
-+#define TIOCGETD	0x5424
-+#define TCSBRKP		0x5425	/* Needed for POSIX tcsendbreak() */
-+#define TIOCSBRK	0x5427  /* BSD compatibility */
-+#define TIOCCBRK	0x5428  /* BSD compatibility */
-+#define TIOCGSID	0x5429  /* Return the session ID of FD */
-+#define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
-+#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
-+
-+#define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
-+#define FIOCLEX		0x5451
-+#define FIOASYNC	0x5452
-+#define TIOCSERCONFIG	0x5453
-+#define TIOCSERGWILD	0x5454
-+#define TIOCSERSWILD	0x5455
-+#define TIOCGLCKTRMIOS	0x5456
-+#define TIOCSLCKTRMIOS	0x5457
-+#define TIOCSERGSTRUCT	0x5458 /* For debugging only */
-+#define TIOCSERGETLSR   0x5459 /* Get line status register */
-+#define TIOCSERGETMULTI 0x545A /* Get multiport config  */
-+#define TIOCSERSETMULTI 0x545B /* Set multiport config */
-+
-+#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
-+#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
-+#define FIOQSIZE	0x545E
-+
-+/* Used for packet mode */
-+#define TIOCPKT_DATA		 0
-+#define TIOCPKT_FLUSHREAD	 1
-+#define TIOCPKT_FLUSHWRITE	 2
-+#define TIOCPKT_STOP		 4
-+#define TIOCPKT_START		 8
-+#define TIOCPKT_NOSTOP		16
-+#define TIOCPKT_DOSTOP		32
-+
-+#define TIOCSER_TEMT	0x01	/* Transmitter physically empty */
-+
-+#endif
-diff -ruN linux-2.6.23/include/asm-lm32/io.h linux-2.6.23-lm32/include/asm-lm32/io.h
---- linux-2.6.23/include/asm-lm32/io.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/io.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/io.h b/include/asm-lm32/io.h
+new file mode 100644
+index 0000000..b7eed7b
+--- /dev/null
++++ b/include/asm-lm32/io.h
 @@ -0,0 +1,237 @@
 +/*
 + * Based on:
@@ -9402,9 +9773,109 @@ diff -ruN linux-2.6.23/include/asm-lm32/io.h linux-2.6.23-lm32/include/asm-lm32/
 +#endif /* __KERNEL__ */
 +
 +#endif /* _LM32_ASM_IO_H */
-diff -ruN linux-2.6.23/include/asm-lm32/ipcbuf.h linux-2.6.23-lm32/include/asm-lm32/ipcbuf.h
---- linux-2.6.23/include/asm-lm32/ipcbuf.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/ipcbuf.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/ioctl.h b/include/asm-lm32/ioctl.h
+new file mode 100644
+index 0000000..b279fe0
+--- /dev/null
++++ b/include/asm-lm32/ioctl.h
+@@ -0,0 +1 @@
++#include <asm-generic/ioctl.h>
+diff --git a/include/asm-lm32/ioctls.h b/include/asm-lm32/ioctls.h
+new file mode 100644
+index 0000000..f3ad1fa
+--- /dev/null
++++ b/include/asm-lm32/ioctls.h
+@@ -0,0 +1,85 @@
++/*
++ * Based on:
++ * include/asm-arm/ioctls.h
++ */
++
++#ifndef _ASM_LM32_IOCTLS_H
++#define _ASM_LM32_IOCTLS_H
++
++#include <asm/ioctl.h>
++
++/* 0x54 is just a magic number to make these relatively unique ('T') */
++
++#define TCGETS		0x5401
++#define TCSETS		0x5402
++#define TCSETSW		0x5403
++#define TCSETSF		0x5404
++#define TCGETA		0x5405
++#define TCSETA		0x5406
++#define TCSETAW		0x5407
++#define TCSETAF		0x5408
++#define TCSBRK		0x5409
++#define TCXONC		0x540A
++#define TCFLSH		0x540B
++#define TIOCEXCL	0x540C
++#define TIOCNXCL	0x540D
++#define TIOCSCTTY	0x540E
++#define TIOCGPGRP	0x540F
++#define TIOCSPGRP	0x5410
++#define TIOCOUTQ	0x5411
++#define TIOCSTI		0x5412
++#define TIOCGWINSZ	0x5413
++#define TIOCSWINSZ	0x5414
++#define TIOCMGET	0x5415
++#define TIOCMBIS	0x5416
++#define TIOCMBIC	0x5417
++#define TIOCMSET	0x5418
++#define TIOCGSOFTCAR	0x5419
++#define TIOCSSOFTCAR	0x541A
++#define FIONREAD	0x541B
++#define TIOCINQ		FIONREAD
++#define TIOCLINUX	0x541C
++#define TIOCCONS	0x541D
++#define TIOCGSERIAL	0x541E
++#define TIOCSSERIAL	0x541F
++#define TIOCPKT		0x5420
++#define FIONBIO		0x5421
++#define TIOCNOTTY	0x5422
++#define TIOCSETD	0x5423
++#define TIOCGETD	0x5424
++#define TCSBRKP		0x5425	/* Needed for POSIX tcsendbreak() */
++#define TIOCSBRK	0x5427  /* BSD compatibility */
++#define TIOCCBRK	0x5428  /* BSD compatibility */
++#define TIOCGSID	0x5429  /* Return the session ID of FD */
++#define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
++#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++
++#define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
++#define FIOCLEX		0x5451
++#define FIOASYNC	0x5452
++#define TIOCSERCONFIG	0x5453
++#define TIOCSERGWILD	0x5454
++#define TIOCSERSWILD	0x5455
++#define TIOCGLCKTRMIOS	0x5456
++#define TIOCSLCKTRMIOS	0x5457
++#define TIOCSERGSTRUCT	0x5458 /* For debugging only */
++#define TIOCSERGETLSR   0x5459 /* Get line status register */
++#define TIOCSERGETMULTI 0x545A /* Get multiport config  */
++#define TIOCSERSETMULTI 0x545B /* Set multiport config */
++
++#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
++#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
++#define FIOQSIZE	0x545E
++
++/* Used for packet mode */
++#define TIOCPKT_DATA		 0
++#define TIOCPKT_FLUSHREAD	 1
++#define TIOCPKT_FLUSHWRITE	 2
++#define TIOCPKT_STOP		 4
++#define TIOCPKT_START		 8
++#define TIOCPKT_NOSTOP		16
++#define TIOCPKT_DOSTOP		32
++
++#define TIOCSER_TEMT	0x01	/* Transmitter physically empty */
++
++#endif
+diff --git a/include/asm-lm32/ipcbuf.h b/include/asm-lm32/ipcbuf.h
+new file mode 100644
+index 0000000..b1efffe
+--- /dev/null
++++ b/include/asm-lm32/ipcbuf.h
 @@ -0,0 +1,34 @@
 +/*
 + * Based on:
@@ -9440,10 +9911,12 @@ diff -ruN linux-2.6.23/include/asm-lm32/ipcbuf.h linux-2.6.23-lm32/include/asm-l
 +};
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/irq.h linux-2.6.23-lm32/include/asm-lm32/irq.h
---- linux-2.6.23/include/asm-lm32/irq.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/irq.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,70 @@
+diff --git a/include/asm-lm32/irq.h b/include/asm-lm32/irq.h
+new file mode 100644
+index 0000000..747c6d9
+--- /dev/null
++++ b/include/asm-lm32/irq.h
+@@ -0,0 +1,71 @@
 +/*
 + * (C) Copyright 2007
 + *     Theobroma Systems <www.theobroma-systems.com>
@@ -9492,7 +9965,8 @@ diff -ruN linux-2.6.23/include/asm-lm32/irq.h linux-2.6.23-lm32/include/asm-lm32
 +#define	IRQ_AC97DMAW		(8)
 +#define	IRQ_PFPU		(9)
 +#define	IRQ_TMU			(10)
-+#define	IRQ_PS2			(11)
++#define	IRQ_KEYBOARD		(11)
++#define	IRQ_MOUSE		(12)
 +
 +#define IRQ_SYSTMR	(IRQ_TIMER0)
 +
@@ -9514,9 +9988,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/irq.h linux-2.6.23-lm32/include/asm-lm32
 +unsigned long lm32_irq_pending(void);
 +
 +#endif /* _LM32_ASM_IRQ_H_ */
-diff -ruN linux-2.6.23/include/asm-lm32/irqnode.h linux-2.6.23-lm32/include/asm-lm32/irqnode.h
---- linux-2.6.23/include/asm-lm32/irqnode.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/irqnode.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/irq_regs.h b/include/asm-lm32/irq_regs.h
+new file mode 100644
+index 0000000..3dd9c0b
+--- /dev/null
++++ b/include/asm-lm32/irq_regs.h
+@@ -0,0 +1 @@
++#include <asm-generic/irq_regs.h>
+diff --git a/include/asm-lm32/irqnode.h b/include/asm-lm32/irqnode.h
+new file mode 100644
+index 0000000..40c400c
+--- /dev/null
++++ b/include/asm-lm32/irqnode.h
 @@ -0,0 +1,59 @@
 +/*
 + * (C) Copyright 2007
@@ -9577,29 +10060,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/irqnode.h linux-2.6.23-lm32/include/asm-
 +extern irq_node_t *new_irq_node(void);
 +
 +#endif /* _LM32_ASM_IRQNODE_H */
-diff -ruN linux-2.6.23/include/asm-lm32/irq_regs.h linux-2.6.23-lm32/include/asm-lm32/irq_regs.h
---- linux-2.6.23/include/asm-lm32/irq_regs.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/irq_regs.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_regs.h>
-diff -ruN linux-2.6.23/include/asm-lm32/Kbuild linux-2.6.23-lm32/include/asm-lm32/Kbuild
---- linux-2.6.23/include/asm-lm32/Kbuild	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/Kbuild	2009-12-22 07:02:59.000000000 +0100
-@@ -0,0 +1,6 @@
-+include include/asm-generic/Kbuild.asm
-+
-+header-y += io.h
-+header-y += registers.h
-+header-y += traps.h
-+
-diff -ruN linux-2.6.23/include/asm-lm32/kdebug.h linux-2.6.23-lm32/include/asm-lm32/kdebug.h
---- linux-2.6.23/include/asm-lm32/kdebug.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/kdebug.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/kdebug.h b/include/asm-lm32/kdebug.h
+new file mode 100644
+index 0000000..6ece1b0
+--- /dev/null
++++ b/include/asm-lm32/kdebug.h
 @@ -0,0 +1 @@
 +#include <asm-generic/kdebug.h>
-diff -ruN linux-2.6.23/include/asm-lm32/kmap_types.h linux-2.6.23-lm32/include/asm-lm32/kmap_types.h
---- linux-2.6.23/include/asm-lm32/kmap_types.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/kmap_types.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/kmap_types.h b/include/asm-lm32/kmap_types.h
+new file mode 100644
+index 0000000..5ddad12
+--- /dev/null
++++ b/include/asm-lm32/kmap_types.h
 @@ -0,0 +1,29 @@
 +/*
 + * Based on:
@@ -9630,9 +10102,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/kmap_types.h linux-2.6.23-lm32/include/a
 +};
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/linkage.h linux-2.6.23-lm32/include/asm-lm32/linkage.h
---- linux-2.6.23/include/asm-lm32/linkage.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/linkage.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/linkage.h b/include/asm-lm32/linkage.h
+new file mode 100644
+index 0000000..8e7aece
+--- /dev/null
++++ b/include/asm-lm32/linkage.h
 @@ -0,0 +1,7 @@
 +#ifndef _LM32_ASM_LINKAGE_H
 +#define _LM32_ASM_LINKAGE_H
@@ -9641,14 +10115,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/linkage.h linux-2.6.23-lm32/include/asm-
 +#define __ALIGN_STR ".align 4"
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/local.h linux-2.6.23-lm32/include/asm-lm32/local.h
---- linux-2.6.23/include/asm-lm32/local.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/local.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/local.h b/include/asm-lm32/local.h
+new file mode 100644
+index 0000000..c11c530
+--- /dev/null
++++ b/include/asm-lm32/local.h
 @@ -0,0 +1 @@
 +#include <asm-generic/local.h>
-diff -ruN linux-2.6.23/include/asm-lm32/mman.h linux-2.6.23-lm32/include/asm-lm32/mman.h
---- linux-2.6.23/include/asm-lm32/mman.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/mman.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/mman.h b/include/asm-lm32/mman.h
+new file mode 100644
+index 0000000..d56eaee
+--- /dev/null
++++ b/include/asm-lm32/mman.h
 @@ -0,0 +1,44 @@
 +/*
 + * (C) Copyright 2007
@@ -9694,45 +10172,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/mman.h linux-2.6.23-lm32/include/asm-lm3
 +#define MCL_FUTURE	2		/* lock all future mappings */
 +
 +#endif /* _LM32_ASM_MMAN_H__ */
-diff -ruN linux-2.6.23/include/asm-lm32/mmu_context.h linux-2.6.23-lm32/include/asm-lm32/mmu_context.h
---- linux-2.6.23/include/asm-lm32/mmu_context.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/mmu_context.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,32 @@
-+#ifndef _LM32_MMU_CONTEXT_H
-+#define _LM32_MMU_CONTEXT_H
-+
-+#include <asm/setup.h>
-+#include <asm/page.h>
-+#include <asm/pgalloc.h>
-+#include <asm-generic/mm_hooks.h>
-+
-+static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
-+{
-+}
-+
-+static inline int
-+init_new_context(struct task_struct *tsk, struct mm_struct *mm)
-+{
-+	return(0);
-+}
-+
-+#define destroy_context(mm)		do { } while(0)
-+
-+static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next, struct task_struct *tsk)
-+{
-+}
-+
-+#define deactivate_mm(tsk,mm)	do { } while (0)
-+
-+static inline void activate_mm(struct mm_struct *prev_mm,
-+			       struct mm_struct *next_mm)
-+{
-+}
-+
-+#endif
-diff -ruN linux-2.6.23/include/asm-lm32/mmu.h linux-2.6.23-lm32/include/asm-lm32/mmu.h
---- linux-2.6.23/include/asm-lm32/mmu.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/mmu.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/mmu.h b/include/asm-lm32/mmu.h
+new file mode 100644
+index 0000000..571fe42
+--- /dev/null
++++ b/include/asm-lm32/mmu.h
 @@ -0,0 +1,37 @@
 +/*
 + * (C) Copyright 2007
@@ -9771,9 +10215,49 @@ diff -ruN linux-2.6.23/include/asm-lm32/mmu.h linux-2.6.23-lm32/include/asm-lm32
 +} mm_context_t;
 +
 +#endif 
-diff -ruN linux-2.6.23/include/asm-lm32/module.h linux-2.6.23-lm32/include/asm-lm32/module.h
---- linux-2.6.23/include/asm-lm32/module.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/module.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/mmu_context.h b/include/asm-lm32/mmu_context.h
+new file mode 100644
+index 0000000..3eb9bb0
+--- /dev/null
++++ b/include/asm-lm32/mmu_context.h
+@@ -0,0 +1,32 @@
++#ifndef _LM32_MMU_CONTEXT_H
++#define _LM32_MMU_CONTEXT_H
++
++#include <asm/setup.h>
++#include <asm/page.h>
++#include <asm/pgalloc.h>
++#include <asm-generic/mm_hooks.h>
++
++static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
++{
++}
++
++static inline int
++init_new_context(struct task_struct *tsk, struct mm_struct *mm)
++{
++	return(0);
++}
++
++#define destroy_context(mm)		do { } while(0)
++
++static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next, struct task_struct *tsk)
++{
++}
++
++#define deactivate_mm(tsk,mm)	do { } while (0)
++
++static inline void activate_mm(struct mm_struct *prev_mm,
++			       struct mm_struct *next_mm)
++{
++}
++
++#endif
+diff --git a/include/asm-lm32/module.h b/include/asm-lm32/module.h
+new file mode 100644
+index 0000000..7f9e62a
+--- /dev/null
++++ b/include/asm-lm32/module.h
 @@ -0,0 +1,20 @@
 +/*
 + * Based on:
@@ -9795,9 +10279,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/module.h linux-2.6.23-lm32/include/asm-l
 +#define MODULE_ARCH_VERMAGIC	"LM32v1"
 +
 +#endif /* _LM32_ASM_MODULE_H */
-diff -ruN linux-2.6.23/include/asm-lm32/msgbuf.h linux-2.6.23-lm32/include/asm-lm32/msgbuf.h
---- linux-2.6.23/include/asm-lm32/msgbuf.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/msgbuf.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/msgbuf.h b/include/asm-lm32/msgbuf.h
+new file mode 100644
+index 0000000..f33f1cb
+--- /dev/null
++++ b/include/asm-lm32/msgbuf.h
 @@ -0,0 +1,33 @@
 +/*
 + * Based on:
@@ -9832,15 +10318,19 @@ diff -ruN linux-2.6.23/include/asm-lm32/msgbuf.h linux-2.6.23-lm32/include/asm-l
 +};
 +
 +#endif /* _LM32_MSGBUF_H */
-diff -ruN linux-2.6.23/include/asm-lm32/mutex.h linux-2.6.23-lm32/include/asm-lm32/mutex.h
---- linux-2.6.23/include/asm-lm32/mutex.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/mutex.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/mutex.h b/include/asm-lm32/mutex.h
+new file mode 100644
+index 0000000..3530a11
+--- /dev/null
++++ b/include/asm-lm32/mutex.h
 @@ -0,0 +1,2 @@
 +/* TODO: there may be room for optimisation in mutex implementation */
 +#include <asm-generic/mutex-dec.h>
-diff -ruN linux-2.6.23/include/asm-lm32/namei.h linux-2.6.23-lm32/include/asm-lm32/namei.h
---- linux-2.6.23/include/asm-lm32/namei.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/namei.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/namei.h b/include/asm-lm32/namei.h
+new file mode 100644
+index 0000000..281546e
+--- /dev/null
++++ b/include/asm-lm32/namei.h
 @@ -0,0 +1,20 @@
 +/*
 + * Based on:
@@ -9862,9 +10352,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/namei.h linux-2.6.23-lm32/include/asm-lm
 +#define __emul_prefix() NULL
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/page.h linux-2.6.23-lm32/include/asm-lm32/page.h
---- linux-2.6.23/include/asm-lm32/page.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/page.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/page.h b/include/asm-lm32/page.h
+new file mode 100644
+index 0000000..6ce8f08
+--- /dev/null
++++ b/include/asm-lm32/page.h
 @@ -0,0 +1,120 @@
 +/*
 + * (C) Copyright 2007
@@ -9986,9 +10478,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/page.h linux-2.6.23-lm32/include/asm-lm3
 +#endif /* __KERNEL__ */
 +
 +#endif /* _LM32_PAGE_H */
-diff -ruN linux-2.6.23/include/asm-lm32/param.h linux-2.6.23-lm32/include/asm-lm32/param.h
---- linux-2.6.23/include/asm-lm32/param.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/param.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/param.h b/include/asm-lm32/param.h
+new file mode 100644
+index 0000000..cde72f6
+--- /dev/null
++++ b/include/asm-lm32/param.h
 @@ -0,0 +1,18 @@
 +#ifndef _LM32_ASM_PARAM_H
 +#define _LM32_ASM_PARAM_H 
@@ -10008,9 +10502,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/param.h linux-2.6.23-lm32/include/asm-lm
 +#define MAXHOSTNAMELEN	64	/* max length of hostname */
 +
 +#endif /* _LM32_PARAM_H */
-diff -ruN linux-2.6.23/include/asm-lm32/pci.h linux-2.6.23-lm32/include/asm-lm32/pci.h
---- linux-2.6.23/include/asm-lm32/pci.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/pci.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/pci.h b/include/asm-lm32/pci.h
+new file mode 100644
+index 0000000..b544613
+--- /dev/null
++++ b/include/asm-lm32/pci.h
 @@ -0,0 +1,86 @@
 +/*
 + * Based on:
@@ -10098,14 +10594,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/pci.h linux-2.6.23-lm32/include/asm-lm32
 +#include <asm-generic/pci.h>
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/percpu.h linux-2.6.23-lm32/include/asm-lm32/percpu.h
---- linux-2.6.23/include/asm-lm32/percpu.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/percpu.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/percpu.h b/include/asm-lm32/percpu.h
+new file mode 100644
+index 0000000..06a959d
+--- /dev/null
++++ b/include/asm-lm32/percpu.h
 @@ -0,0 +1 @@
 +#include <asm-generic/percpu.h>
-diff -ruN linux-2.6.23/include/asm-lm32/pgalloc.h linux-2.6.23-lm32/include/asm-lm32/pgalloc.h
---- linux-2.6.23/include/asm-lm32/pgalloc.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/pgalloc.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/pgalloc.h b/include/asm-lm32/pgalloc.h
+new file mode 100644
+index 0000000..883c994
+--- /dev/null
++++ b/include/asm-lm32/pgalloc.h
 @@ -0,0 +1,8 @@
 +#ifndef _LM32_ASM_PGALLOC_H
 +#define _LM32_ASM_PGALLOC_H
@@ -10115,9 +10615,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/pgalloc.h linux-2.6.23-lm32/include/asm-
 +#define check_pgt_cache()	do { } while (0)
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/pgtable.h linux-2.6.23-lm32/include/asm-lm32/pgtable.h
---- linux-2.6.23/include/asm-lm32/pgtable.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/pgtable.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/pgtable.h b/include/asm-lm32/pgtable.h
+new file mode 100644
+index 0000000..4477556
+--- /dev/null
++++ b/include/asm-lm32/pgtable.h
 @@ -0,0 +1,93 @@
 +/*
 + * Based on:
@@ -10212,14 +10714,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/pgtable.h linux-2.6.23-lm32/include/asm-
 +#include <asm-generic/pgtable.h>
 +
 +#endif				/* _LM32_ASM_PGTABLE_H */
-diff -ruN linux-2.6.23/include/asm-lm32/poll.h linux-2.6.23-lm32/include/asm-lm32/poll.h
---- linux-2.6.23/include/asm-lm32/poll.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/poll.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/poll.h b/include/asm-lm32/poll.h
+new file mode 100644
+index 0000000..c98509d
+--- /dev/null
++++ b/include/asm-lm32/poll.h
 @@ -0,0 +1 @@
 +#include <asm-generic/poll.h>
-diff -ruN linux-2.6.23/include/asm-lm32/posix_types.h linux-2.6.23-lm32/include/asm-lm32/posix_types.h
---- linux-2.6.23/include/asm-lm32/posix_types.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/posix_types.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/posix_types.h b/include/asm-lm32/posix_types.h
+new file mode 100644
+index 0000000..75bb000
+--- /dev/null
++++ b/include/asm-lm32/posix_types.h
 @@ -0,0 +1,70 @@
 +/*
 + * Based on:
@@ -10291,9 +10797,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/posix_types.h linux-2.6.23-lm32/include/
 +#endif /* defined(__KERNEL__) || !defined(__GLIBC__) || (__GLIBC__ < 2) */
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/processor.h linux-2.6.23-lm32/include/asm-lm32/processor.h
---- linux-2.6.23/include/asm-lm32/processor.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/processor.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/processor.h b/include/asm-lm32/processor.h
+new file mode 100644
+index 0000000..0cf882b
+--- /dev/null
++++ b/include/asm-lm32/processor.h
 @@ -0,0 +1,112 @@
 +/*
 + * (C) Copyright 2007
@@ -10407,9 +10915,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/processor.h linux-2.6.23-lm32/include/as
 +#define cpu_relax()    barrier()
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/ptrace.h linux-2.6.23-lm32/include/asm-lm32/ptrace.h
---- linux-2.6.23/include/asm-lm32/ptrace.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/ptrace.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/ptrace.h b/include/asm-lm32/ptrace.h
+new file mode 100644
+index 0000000..0d7a9e7
+--- /dev/null
++++ b/include/asm-lm32/ptrace.h
 @@ -0,0 +1,49 @@
 +/*
 + * (C) Copyright 2007
@@ -10460,9 +10970,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/ptrace.h linux-2.6.23-lm32/include/asm-l
 +#endif
 +
 +#endif /* _LM32_PTRACE_H */
-diff -ruN linux-2.6.23/include/asm-lm32/registers.h linux-2.6.23-lm32/include/asm-lm32/registers.h
---- linux-2.6.23/include/asm-lm32/registers.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/registers.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/registers.h b/include/asm-lm32/registers.h
+new file mode 100644
+index 0000000..67a468f
+--- /dev/null
++++ b/include/asm-lm32/registers.h
 @@ -0,0 +1,84 @@
 +
 +/* registers.h: register frame declarations
@@ -10548,14 +11060,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/registers.h linux-2.6.23-lm32/include/as
 +#endif /* __ASSEMBLY__ */
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/resource.h linux-2.6.23-lm32/include/asm-lm32/resource.h
---- linux-2.6.23/include/asm-lm32/resource.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/resource.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/resource.h b/include/asm-lm32/resource.h
+new file mode 100644
+index 0000000..04bc4db
+--- /dev/null
++++ b/include/asm-lm32/resource.h
 @@ -0,0 +1 @@
 +#include <asm-generic/resource.h>
-diff -ruN linux-2.6.23/include/asm-lm32/scatterlist.h linux-2.6.23-lm32/include/asm-lm32/scatterlist.h
---- linux-2.6.23/include/asm-lm32/scatterlist.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/scatterlist.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/scatterlist.h b/include/asm-lm32/scatterlist.h
+new file mode 100644
+index 0000000..03481c9
+--- /dev/null
++++ b/include/asm-lm32/scatterlist.h
 @@ -0,0 +1,25 @@
 +/*
 + * Based on
@@ -10582,14 +11098,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/scatterlist.h linux-2.6.23-lm32/include/
 +#define ISA_DMA_THRESHOLD	(0xffffffff)
 +
 +#endif /* _LM32_ASM_SCATTERLIST_H */
-diff -ruN linux-2.6.23/include/asm-lm32/sections.h linux-2.6.23-lm32/include/asm-lm32/sections.h
---- linux-2.6.23/include/asm-lm32/sections.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/sections.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/sections.h b/include/asm-lm32/sections.h
+new file mode 100644
+index 0000000..2b8c516
+--- /dev/null
++++ b/include/asm-lm32/sections.h
 @@ -0,0 +1 @@
 +#include <asm-generic/sections.h>
-diff -ruN linux-2.6.23/include/asm-lm32/segment.h linux-2.6.23-lm32/include/asm-lm32/segment.h
---- linux-2.6.23/include/asm-lm32/segment.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/segment.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/segment.h b/include/asm-lm32/segment.h
+new file mode 100644
+index 0000000..96c4f0e
+--- /dev/null
++++ b/include/asm-lm32/segment.h
 @@ -0,0 +1,38 @@
 +/*
 + * (C) Copyright 2007
@@ -10629,9 +11149,102 @@ diff -ruN linux-2.6.23/include/asm-lm32/segment.h linux-2.6.23-lm32/include/asm-
 +#endif /* __ASSEMBLY__ */
 +
 +#endif /* _LM32_ASM_SEGMENT_H */
-diff -ruN linux-2.6.23/include/asm-lm32/semaphore.h linux-2.6.23-lm32/include/asm-lm32/semaphore.h
---- linux-2.6.23/include/asm-lm32/semaphore.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/semaphore.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/semaphore-helper.h b/include/asm-lm32/semaphore-helper.h
+new file mode 100644
+index 0000000..a12562c
+--- /dev/null
++++ b/include/asm-lm32/semaphore-helper.h
+@@ -0,0 +1,85 @@
++/*
++ * Based on:
++ * include/asm-blackfin/semaphore-helper.h
++ * 
++ * Based on M68K version,	Lineo Inc.	May 2001
++ *
++ * SMP- and interrupt-safe semaphores helper functions.
++ *
++ * (C) Copyright 1996 Linus Torvalds
++ *
++ */
++
++#ifndef _ASM_LM32_SEMAPHORE_HELPER_H
++#define _ASM_LM32_SEMAPHORE_HELPER_H
++
++#include <asm/errno.h>
++
++/*
++ * These two _must_ execute atomically wrt each other.
++ */
++static inline void wake_one_more(struct semaphore *sem)
++{
++	atomic_inc(&sem->waking);
++}
++
++static inline int waking_non_zero(struct semaphore *sem)
++{
++	int ret;
++	unsigned long flags = 0;
++
++	spin_lock_irqsave(&semaphore_wake_lock, flags);
++	ret = 0;
++	if (atomic_read(&sem->waking) > 0) {
++		atomic_dec(&sem->waking);
++		ret = 1;
++	}
++	spin_unlock_irqrestore(&semaphore_wake_lock, flags);
++	return ret;
++}
++
++/*
++ * waking_non_zero_interruptible:
++ *	1	got the lock
++ *	0	go to sleep
++ *	-EINTR	interrupted
++ */
++static inline int waking_non_zero_interruptible(struct semaphore *sem,
++						struct task_struct *tsk)
++{
++	int ret = 0;
++	unsigned long flags = 0;
++
++	spin_lock_irqsave(&semaphore_wake_lock, flags);
++	if (atomic_read(&sem->waking) > 0) {
++		atomic_dec(&sem->waking);
++		ret = 1;
++	} else if (signal_pending(tsk)) {
++		atomic_inc(&sem->count);
++		ret = -EINTR;
++	}
++	spin_unlock_irqrestore(&semaphore_wake_lock, flags);
++	return ret;
++}
++
++/*
++ * waking_non_zero_trylock:
++ *	1	failed to lock
++ *	0	got the lock
++ */
++static inline int waking_non_zero_trylock(struct semaphore *sem)
++{
++	int ret = 1;
++	unsigned long flags = 0;
++
++	spin_lock_irqsave(&semaphore_wake_lock, flags);
++	if (atomic_read(&sem->waking) > 0) {
++		atomic_dec(&sem->waking);
++		ret = 0;
++	} else
++		atomic_inc(&sem->count);
++	spin_unlock_irqrestore(&semaphore_wake_lock, flags);
++	return ret;
++}
++
++#endif
+diff --git a/include/asm-lm32/semaphore.h b/include/asm-lm32/semaphore.h
+new file mode 100644
+index 0000000..7b5c6a1
+--- /dev/null
++++ b/include/asm-lm32/semaphore.h
 @@ -0,0 +1,131 @@
 +/*
 + * (C) Copyright 2007
@@ -10764,98 +11377,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/semaphore.h linux-2.6.23-lm32/include/as
 +
 +#endif				/* __ASSEMBLY__ */
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/semaphore-helper.h linux-2.6.23-lm32/include/asm-lm32/semaphore-helper.h
---- linux-2.6.23/include/asm-lm32/semaphore-helper.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/semaphore-helper.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,85 @@
-+/*
-+ * Based on:
-+ * include/asm-blackfin/semaphore-helper.h
-+ * 
-+ * Based on M68K version,	Lineo Inc.	May 2001
-+ *
-+ * SMP- and interrupt-safe semaphores helper functions.
-+ *
-+ * (C) Copyright 1996 Linus Torvalds
-+ *
-+ */
-+
-+#ifndef _ASM_LM32_SEMAPHORE_HELPER_H
-+#define _ASM_LM32_SEMAPHORE_HELPER_H
-+
-+#include <asm/errno.h>
-+
-+/*
-+ * These two _must_ execute atomically wrt each other.
-+ */
-+static inline void wake_one_more(struct semaphore *sem)
-+{
-+	atomic_inc(&sem->waking);
-+}
-+
-+static inline int waking_non_zero(struct semaphore *sem)
-+{
-+	int ret;
-+	unsigned long flags = 0;
-+
-+	spin_lock_irqsave(&semaphore_wake_lock, flags);
-+	ret = 0;
-+	if (atomic_read(&sem->waking) > 0) {
-+		atomic_dec(&sem->waking);
-+		ret = 1;
-+	}
-+	spin_unlock_irqrestore(&semaphore_wake_lock, flags);
-+	return ret;
-+}
-+
-+/*
-+ * waking_non_zero_interruptible:
-+ *	1	got the lock
-+ *	0	go to sleep
-+ *	-EINTR	interrupted
-+ */
-+static inline int waking_non_zero_interruptible(struct semaphore *sem,
-+						struct task_struct *tsk)
-+{
-+	int ret = 0;
-+	unsigned long flags = 0;
-+
-+	spin_lock_irqsave(&semaphore_wake_lock, flags);
-+	if (atomic_read(&sem->waking) > 0) {
-+		atomic_dec(&sem->waking);
-+		ret = 1;
-+	} else if (signal_pending(tsk)) {
-+		atomic_inc(&sem->count);
-+		ret = -EINTR;
-+	}
-+	spin_unlock_irqrestore(&semaphore_wake_lock, flags);
-+	return ret;
-+}
-+
-+/*
-+ * waking_non_zero_trylock:
-+ *	1	failed to lock
-+ *	0	got the lock
-+ */
-+static inline int waking_non_zero_trylock(struct semaphore *sem)
-+{
-+	int ret = 1;
-+	unsigned long flags = 0;
-+
-+	spin_lock_irqsave(&semaphore_wake_lock, flags);
-+	if (atomic_read(&sem->waking) > 0) {
-+		atomic_dec(&sem->waking);
-+		ret = 0;
-+	} else
-+		atomic_inc(&sem->count);
-+	spin_unlock_irqrestore(&semaphore_wake_lock, flags);
-+	return ret;
-+}
-+
-+#endif
-diff -ruN linux-2.6.23/include/asm-lm32/sembuf.h linux-2.6.23-lm32/include/asm-lm32/sembuf.h
---- linux-2.6.23/include/asm-lm32/sembuf.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/sembuf.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/sembuf.h b/include/asm-lm32/sembuf.h
+new file mode 100644
+index 0000000..af2cf46
+--- /dev/null
++++ b/include/asm-lm32/sembuf.h
 @@ -0,0 +1,30 @@
 +/*
 + * Based on:
@@ -10887,9 +11413,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/sembuf.h linux-2.6.23-lm32/include/asm-l
 +};
 +
 +#endif 
-diff -ruN linux-2.6.23/include/asm-lm32/setup.h linux-2.6.23-lm32/include/asm-lm32/setup.h
---- linux-2.6.23/include/asm-lm32/setup.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/setup.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/setup.h b/include/asm-lm32/setup.h
+new file mode 100644
+index 0000000..cb8f618
+--- /dev/null
++++ b/include/asm-lm32/setup.h
 @@ -0,0 +1,41 @@
 +/*
 + * (C) Copyright 2007
@@ -10932,9 +11460,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/setup.h linux-2.6.23-lm32/include/asm-lm
 +#define COMMAND_LINE_SIZE 256
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/shmbuf.h linux-2.6.23-lm32/include/asm-lm32/shmbuf.h
---- linux-2.6.23/include/asm-lm32/shmbuf.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/shmbuf.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/shmbuf.h b/include/asm-lm32/shmbuf.h
+new file mode 100644
+index 0000000..351a492
+--- /dev/null
++++ b/include/asm-lm32/shmbuf.h
 @@ -0,0 +1,47 @@
 +/*
 + * Based on:
@@ -10983,9 +11513,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/shmbuf.h linux-2.6.23-lm32/include/asm-l
 +};
 +
 +#endif /* _LM32_ASM_SHMBUF_H */
-diff -ruN linux-2.6.23/include/asm-lm32/shmparam.h linux-2.6.23-lm32/include/asm-lm32/shmparam.h
---- linux-2.6.23/include/asm-lm32/shmparam.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/shmparam.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/shmparam.h b/include/asm-lm32/shmparam.h
+new file mode 100644
+index 0000000..65523c5
+--- /dev/null
++++ b/include/asm-lm32/shmparam.h
 @@ -0,0 +1,6 @@
 +#ifndef _LM32_ASM_SHMPARAM_H
 +#define _LM32_ASM_SHMPARAM_H
@@ -10993,9 +11525,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/shmparam.h linux-2.6.23-lm32/include/asm
 +#define	SHMLBA PAGE_SIZE		 /* attach addr a multiple of this */
 +
 +#endif /* _LM32_ASM_SHMPARAM_H */
-diff -ruN linux-2.6.23/include/asm-lm32/sigcontext.h linux-2.6.23-lm32/include/asm-lm32/sigcontext.h
---- linux-2.6.23/include/asm-lm32/sigcontext.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/sigcontext.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/sigcontext.h b/include/asm-lm32/sigcontext.h
+new file mode 100644
+index 0000000..80489bc
+--- /dev/null
++++ b/include/asm-lm32/sigcontext.h
 @@ -0,0 +1,49 @@
 +/*
 + * (C) Copyright 2007
@@ -11046,14 +11580,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/sigcontext.h linux-2.6.23-lm32/include/a
 +
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/siginfo.h linux-2.6.23-lm32/include/asm-lm32/siginfo.h
---- linux-2.6.23/include/asm-lm32/siginfo.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/siginfo.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/siginfo.h b/include/asm-lm32/siginfo.h
+new file mode 100644
+index 0000000..0815d29
+--- /dev/null
++++ b/include/asm-lm32/siginfo.h
 @@ -0,0 +1 @@
 +#include <asm-generic/siginfo.h>
-diff -ruN linux-2.6.23/include/asm-lm32/signal.h linux-2.6.23-lm32/include/asm-lm32/signal.h
---- linux-2.6.23/include/asm-lm32/signal.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/signal.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/signal.h b/include/asm-lm32/signal.h
+new file mode 100644
+index 0000000..d91bd37
+--- /dev/null
++++ b/include/asm-lm32/signal.h
 @@ -0,0 +1,183 @@
 +/*
 + * (C) Copyright 2007
@@ -11238,9 +11776,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/signal.h linux-2.6.23-lm32/include/asm-l
 +#endif				/* __KERNEL__ */
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/socket.h linux-2.6.23-lm32/include/asm-lm32/socket.h
---- linux-2.6.23/include/asm-lm32/socket.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/socket.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/socket.h b/include/asm-lm32/socket.h
+new file mode 100644
+index 0000000..bd09945
+--- /dev/null
++++ b/include/asm-lm32/socket.h
 @@ -0,0 +1,76 @@
 +/*
 + * (C) Copyright 2007
@@ -11318,9 +11858,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/socket.h linux-2.6.23-lm32/include/asm-l
 +#define SO_TIMESTAMPNS		35
 +#define SCM_TIMESTAMPNS		SO_TIMESTAMPNS
 +#endif /* _LM32_ASM_SOCKET_H */
-diff -ruN linux-2.6.23/include/asm-lm32/sockios.h linux-2.6.23-lm32/include/asm-lm32/sockios.h
---- linux-2.6.23/include/asm-lm32/sockios.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/sockios.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/sockios.h b/include/asm-lm32/sockios.h
+new file mode 100644
+index 0000000..70a1424
+--- /dev/null
++++ b/include/asm-lm32/sockios.h
 @@ -0,0 +1,18 @@
 +/*
 + * Based on:
@@ -11340,14 +11882,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/sockios.h linux-2.6.23-lm32/include/asm-
 +#define SIOCGSTAMPNS	0x8907		/* Get stamp (timespec) */
 +
 +#endif /* _LM32_ASM_SOCKIOS__ */
-diff -ruN linux-2.6.23/include/asm-lm32/statfs.h linux-2.6.23-lm32/include/asm-lm32/statfs.h
---- linux-2.6.23/include/asm-lm32/statfs.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/statfs.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1 @@
-+#include <asm-generic/statfs.h>
-diff -ruN linux-2.6.23/include/asm-lm32/stat.h linux-2.6.23-lm32/include/asm-lm32/stat.h
---- linux-2.6.23/include/asm-lm32/stat.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/stat.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/stat.h b/include/asm-lm32/stat.h
+new file mode 100644
+index 0000000..1121416
+--- /dev/null
++++ b/include/asm-lm32/stat.h
 @@ -0,0 +1,82 @@
 +/*
 + * Based on:
@@ -11431,9 +11970,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/stat.h linux-2.6.23-lm32/include/asm-lm3
 +};
 +
 +#endif /* _LM32_ASM_STAT_H */
-diff -ruN linux-2.6.23/include/asm-lm32/string.h linux-2.6.23-lm32/include/asm-lm32/string.h
---- linux-2.6.23/include/asm-lm32/string.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/string.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/statfs.h b/include/asm-lm32/statfs.h
+new file mode 100644
+index 0000000..0b91fe1
+--- /dev/null
++++ b/include/asm-lm32/statfs.h
+@@ -0,0 +1 @@
++#include <asm-generic/statfs.h>
+diff --git a/include/asm-lm32/string.h b/include/asm-lm32/string.h
+new file mode 100644
+index 0000000..2e29682
+--- /dev/null
++++ b/include/asm-lm32/string.h
 @@ -0,0 +1,6 @@
 +#ifndef _LM32_ASM_STRING_H
 +#define _LM32_ASM_STRING_H
@@ -11441,9 +11989,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/string.h linux-2.6.23-lm32/include/asm-l
 +//#include <asm/setup.h>
 +
 +#endif	/* _LM32_ASM_STRING_H */
-diff -ruN linux-2.6.23/include/asm-lm32/system.h linux-2.6.23-lm32/include/asm-lm32/system.h
---- linux-2.6.23/include/asm-lm32/system.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/system.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/system.h b/include/asm-lm32/system.h
+new file mode 100644
+index 0000000..a15c06b
+--- /dev/null
++++ b/include/asm-lm32/system.h
 @@ -0,0 +1,199 @@
 +/*
 + * (C) Copyright 2007
@@ -11644,9 +12194,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/system.h linux-2.6.23-lm32/include/asm-l
 +#endif /* !__ASSEMBLY__ */
 +
 +#endif 
-diff -ruN linux-2.6.23/include/asm-lm32/termbits.h linux-2.6.23-lm32/include/asm-lm32/termbits.h
---- linux-2.6.23/include/asm-lm32/termbits.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/termbits.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/termbits.h b/include/asm-lm32/termbits.h
+new file mode 100644
+index 0000000..ffca52e
+--- /dev/null
++++ b/include/asm-lm32/termbits.h
 @@ -0,0 +1,191 @@
 +/*
 + * Based on:
@@ -11839,9 +12391,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/termbits.h linux-2.6.23-lm32/include/asm
 +#define	TCSAFLUSH	2
 +
 +#endif /* _LM32_ASM_TERMBITS_H__ */
-diff -ruN linux-2.6.23/include/asm-lm32/termios.h linux-2.6.23-lm32/include/asm-lm32/termios.h
---- linux-2.6.23/include/asm-lm32/termios.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/termios.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/termios.h b/include/asm-lm32/termios.h
+new file mode 100644
+index 0000000..c7296de
+--- /dev/null
++++ b/include/asm-lm32/termios.h
 @@ -0,0 +1,92 @@
 +/*
 + * Based on:
@@ -11935,9 +12489,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/termios.h linux-2.6.23-lm32/include/asm-
 +#endif	/* __KERNEL__ */
 +
 +#endif /* _LM32_ASM_TERMIOS_H */
-diff -ruN linux-2.6.23/include/asm-lm32/thread_info.h linux-2.6.23-lm32/include/asm-lm32/thread_info.h
---- linux-2.6.23/include/asm-lm32/thread_info.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/thread_info.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/thread_info.h b/include/asm-lm32/thread_info.h
+new file mode 100644
+index 0000000..3945221
+--- /dev/null
++++ b/include/asm-lm32/thread_info.h
 @@ -0,0 +1,117 @@
 +/*
 + * (C) Copyright 2007
@@ -12056,9 +12612,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/thread_info.h linux-2.6.23-lm32/include/
 +#endif /* __KERNEL__ */
 +
 +#endif /* _LM32_ASM_THREAD_INFO_H */
-diff -ruN linux-2.6.23/include/asm-lm32/timex.h linux-2.6.23-lm32/include/asm-lm32/timex.h
---- linux-2.6.23/include/asm-lm32/timex.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/timex.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/timex.h b/include/asm-lm32/timex.h
+new file mode 100644
+index 0000000..bfe5b22
+--- /dev/null
++++ b/include/asm-lm32/timex.h
 @@ -0,0 +1,42 @@
 +/*
 + * (C) Copyright 2007
@@ -12102,9 +12660,37 @@ diff -ruN linux-2.6.23/include/asm-lm32/timex.h linux-2.6.23-lm32/include/asm-lm
 +void lm32_systimer_program(int periodic, cycles_t cyc);
 +
 +#endif /*  _ASM_TIMEX_H */
-diff -ruN linux-2.6.23/include/asm-lm32/tlbflush.h linux-2.6.23-lm32/include/asm-lm32/tlbflush.h
---- linux-2.6.23/include/asm-lm32/tlbflush.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/tlbflush.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/tlb.h b/include/asm-lm32/tlb.h
+new file mode 100644
+index 0000000..37a07a3
+--- /dev/null
++++ b/include/asm-lm32/tlb.h
+@@ -0,0 +1,20 @@
++#ifndef _LM32_ASM_TLB_H
++#define _LM32_ASM_TLB_H
++
++/*
++ * lm32 doesn't need any special per-pte or
++ * per-vma handling..
++ */
++#define tlb_start_vma(tlb, vma)	do { } while (0)
++#define tlb_end_vma(tlb, vma)	do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
++
++/*
++ * .. because we flush the whole mm when it
++ * fills up.
++ */
++#define tlb_flush(tlb)		flush_tlb_mm((tlb)->mm)
++
++#include <asm-generic/tlb.h>
++
++#endif /* _LM32_ASM_TLB_H */
+diff --git a/include/asm-lm32/tlbflush.h b/include/asm-lm32/tlbflush.h
+new file mode 100644
+index 0000000..562bf38
+--- /dev/null
++++ b/include/asm-lm32/tlbflush.h
 @@ -0,0 +1,64 @@
 +/*
 + * Based on:
@@ -12170,38 +12756,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/tlbflush.h linux-2.6.23-lm32/include/asm
 +}
 +
 +#endif /* _LM32_ASM_TLBFLUSH_H */
-diff -ruN linux-2.6.23/include/asm-lm32/tlb.h linux-2.6.23-lm32/include/asm-lm32/tlb.h
---- linux-2.6.23/include/asm-lm32/tlb.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/tlb.h	2009-12-22 02:23:42.000000000 +0100
-@@ -0,0 +1,20 @@
-+#ifndef _LM32_ASM_TLB_H
-+#define _LM32_ASM_TLB_H
-+
-+/*
-+ * lm32 doesn't need any special per-pte or
-+ * per-vma handling..
-+ */
-+#define tlb_start_vma(tlb, vma)	do { } while (0)
-+#define tlb_end_vma(tlb, vma)	do { } while (0)
-+#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
-+
-+/*
-+ * .. because we flush the whole mm when it
-+ * fills up.
-+ */
-+#define tlb_flush(tlb)		flush_tlb_mm((tlb)->mm)
-+
-+#include <asm-generic/tlb.h>
-+
-+#endif /* _LM32_ASM_TLB_H */
-diff -ruN linux-2.6.23/include/asm-lm32/topology.h linux-2.6.23-lm32/include/asm-lm32/topology.h
---- linux-2.6.23/include/asm-lm32/topology.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/topology.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/topology.h b/include/asm-lm32/topology.h
+new file mode 100644
+index 0000000..5428f33
+--- /dev/null
++++ b/include/asm-lm32/topology.h
 @@ -0,0 +1 @@
 +#include <asm-generic/topology.h>
-diff -ruN linux-2.6.23/include/asm-lm32/traps.h linux-2.6.23-lm32/include/asm-lm32/traps.h
---- linux-2.6.23/include/asm-lm32/traps.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/traps.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/traps.h b/include/asm-lm32/traps.h
+new file mode 100644
+index 0000000..6289ddb
+--- /dev/null
++++ b/include/asm-lm32/traps.h
 @@ -0,0 +1,10 @@
 +#ifndef __ASM_LM32_TRAPS_H
 +#define __ASM_LM32_TRAPS_H
@@ -12213,9 +12779,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/traps.h linux-2.6.23-lm32/include/asm-lm
 +#endif
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/types.h linux-2.6.23-lm32/include/asm-lm32/types.h
---- linux-2.6.23/include/asm-lm32/types.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/types.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/types.h b/include/asm-lm32/types.h
+new file mode 100644
+index 0000000..9bd8838
+--- /dev/null
++++ b/include/asm-lm32/types.h
 @@ -0,0 +1,97 @@
 +/*
 + * (C) Copyright 2007
@@ -12314,9 +12882,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/types.h linux-2.6.23-lm32/include/asm-lm
 +#endif /* __KERNEL__ */
 +
 +#endif /* _LM32_TYPES_H */
-diff -ruN linux-2.6.23/include/asm-lm32/uaccess.h linux-2.6.23-lm32/include/asm-lm32/uaccess.h
---- linux-2.6.23/include/asm-lm32/uaccess.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/uaccess.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/uaccess.h b/include/asm-lm32/uaccess.h
+new file mode 100644
+index 0000000..1139470
+--- /dev/null
++++ b/include/asm-lm32/uaccess.h
 @@ -0,0 +1,205 @@
 +/*
 + * (C) Copyright 2007
@@ -12523,14 +13093,18 @@ diff -ruN linux-2.6.23/include/asm-lm32/uaccess.h linux-2.6.23-lm32/include/asm-
 +}
 +
 +#endif /* _LM32_ASM_UACCESS_H */
-diff -ruN linux-2.6.23/include/asm-lm32/unaligned.h linux-2.6.23-lm32/include/asm-lm32/unaligned.h
---- linux-2.6.23/include/asm-lm32/unaligned.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/unaligned.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/unaligned.h b/include/asm-lm32/unaligned.h
+new file mode 100644
+index 0000000..6cecbbb
+--- /dev/null
++++ b/include/asm-lm32/unaligned.h
 @@ -0,0 +1 @@
 +#include <asm-generic/unaligned.h>
-diff -ruN linux-2.6.23/include/asm-lm32/unistd.h linux-2.6.23-lm32/include/asm-lm32/unistd.h
---- linux-2.6.23/include/asm-lm32/unistd.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/unistd.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/unistd.h b/include/asm-lm32/unistd.h
+new file mode 100644
+index 0000000..5fa6b12
+--- /dev/null
++++ b/include/asm-lm32/unistd.h
 @@ -0,0 +1,417 @@
 +/*
 + * (C) Copyright 2007
@@ -12949,9 +13523,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/unistd.h linux-2.6.23-lm32/include/asm-l
 +#endif	/* __KERNEL__ */
 +
 +#endif
-diff -ruN linux-2.6.23/include/asm-lm32/user.h linux-2.6.23-lm32/include/asm-lm32/user.h
---- linux-2.6.23/include/asm-lm32/user.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.23-lm32/include/asm-lm32/user.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/asm-lm32/user.h b/include/asm-lm32/user.h
+new file mode 100644
+index 0000000..b33141b
+--- /dev/null
++++ b/include/asm-lm32/user.h
 @@ -0,0 +1,56 @@
 +/*
 + * (C) Copyright 2007
@@ -13009,10 +13585,11 @@ diff -ruN linux-2.6.23/include/asm-lm32/user.h linux-2.6.23-lm32/include/asm-lm3
 +#define HOST_STACK_END_ADDR (u.start_stack + u.u_ssize * NBPG)
 +
 +#endif
-diff -ruN linux-2.6.23/include/linux/mtd/map.h linux-2.6.23-lm32/include/linux/mtd/map.h
---- linux-2.6.23/include/linux/mtd/map.h	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/include/linux/mtd/map.h	2009-12-22 02:23:42.000000000 +0100
-@@ -362,10 +362,21 @@
+diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
+index 81f3a31..875af58 100644
+--- a/include/linux/mtd/map.h
++++ b/include/linux/mtd/map.h
+@@ -362,10 +362,21 @@ static inline map_word map_word_ff(struct map_info *map)
  	return r;
  }
  
@@ -13034,7 +13611,7 @@ diff -ruN linux-2.6.23/include/linux/mtd/map.h linux-2.6.23-lm32/include/linux/m
  	if (map_bankwidth_is_1(map))
  		r.x[0] = __raw_readb(map->virt + ofs);
  	else if (map_bankwidth_is_2(map))
-@@ -397,6 +408,9 @@
+@@ -397,6 +408,9 @@ static inline void inline_map_write(struct map_info *map, const map_word datum,
  	else if (map_bankwidth_is_large(map))
  		memcpy_toio(map->virt+ofs, datum.x, map->bankwidth);
  	mb();
@@ -13044,9 +13621,10 @@ diff -ruN linux-2.6.23/include/linux/mtd/map.h linux-2.6.23-lm32/include/linux/m
  }
  
  static inline void inline_map_copy_from(struct map_info *map, void *to, unsigned long from, ssize_t len)
-diff -ruN linux-2.6.23/include/linux/serial_core.h linux-2.6.23-lm32/include/linux/serial_core.h
---- linux-2.6.23/include/linux/serial_core.h	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/include/linux/serial_core.h	2009-12-22 02:23:42.000000000 +0100
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 09d17b0..694df21 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
 @@ -146,6 +146,9 @@
  /* Broadcom SB1250, etc. SOC */
  #define PORT_SB1250_DUART	77
@@ -13057,10 +13635,11 @@ diff -ruN linux-2.6.23/include/linux/serial_core.h linux-2.6.23-lm32/include/lin
  
  #ifdef __KERNEL__
  
-diff -ruN linux-2.6.23/init/Kconfig linux-2.6.23-lm32/init/Kconfig
---- linux-2.6.23/init/Kconfig	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/init/Kconfig	2009-12-22 02:23:42.000000000 +0100
-@@ -64,6 +64,7 @@
+diff --git a/init/Kconfig b/init/Kconfig
+index d54d0ca..93ed2d8 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -64,6 +64,7 @@ config INIT_ENV_ARG_LIMIT
  
  config LOCALVERSION
  	string "Local version - append to kernel release"
@@ -13068,10 +13647,11 @@ diff -ruN linux-2.6.23/init/Kconfig linux-2.6.23-lm32/init/Kconfig
  	help
  	  Append an extra string to the end of your kernel version.
  	  This will show up when you type uname, for example.
-diff -ruN linux-2.6.23/kernel/softirq.c linux-2.6.23-lm32/kernel/softirq.c
---- linux-2.6.23/kernel/softirq.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/kernel/softirq.c	2009-12-22 02:23:42.000000000 +0100
-@@ -135,10 +135,8 @@
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 0f546dd..1b6ba7e 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -135,10 +135,8 @@ void local_bh_enable(void)
  	unsigned long flags;
  
  	WARN_ON_ONCE(in_irq());
@@ -13082,9 +13662,10 @@ diff -ruN linux-2.6.23/kernel/softirq.c linux-2.6.23-lm32/kernel/softirq.c
  	local_irq_save(flags);
  #endif
  	/*
-diff -ruN linux-2.6.23/mm/memory.c linux-2.6.23-lm32/mm/memory.c
---- linux-2.6.23/mm/memory.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/mm/memory.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/mm/memory.c b/mm/memory.c
+index f82b359..c28fa69 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
 @@ -50,6 +50,7 @@
  #include <linux/delayacct.h>
  #include <linux/init.h>
@@ -13093,7 +13674,7 @@ diff -ruN linux-2.6.23/mm/memory.c linux-2.6.23-lm32/mm/memory.c
  
  #include <asm/pgalloc.h>
  #include <asm/uaccess.h>
-@@ -416,6 +417,34 @@
+@@ -416,6 +417,34 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr, pte_
  	return pfn_to_page(pfn);
  }
  
@@ -13128,7 +13709,7 @@ diff -ruN linux-2.6.23/mm/memory.c linux-2.6.23-lm32/mm/memory.c
  /*
   * copy one vm_area from one task to the other. Assumes the page tables
   * already present in the new task to be cleared in the whole range
-@@ -424,8 +453,8 @@
+@@ -424,8 +453,8 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr, pte_
  
  static inline void
  copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
@@ -13139,7 +13720,7 @@ diff -ruN linux-2.6.23/mm/memory.c linux-2.6.23-lm32/mm/memory.c
  {
  	unsigned long vm_flags = vma->vm_flags;
  	pte_t pte = *src_pte;
-@@ -494,13 +523,16 @@
+@@ -494,13 +523,16 @@ static int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
  	pte_t *src_pte, *dst_pte;
  	spinlock_t *src_ptl, *dst_ptl;
  	int progress = 0;
@@ -13158,7 +13739,7 @@ diff -ruN linux-2.6.23/mm/memory.c linux-2.6.23-lm32/mm/memory.c
  	src_pte = pte_offset_map_nested(src_pmd, addr);
  	src_ptl = pte_lockptr(src_mm, src_pmd);
  	spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
-@@ -522,7 +554,9 @@
+@@ -522,7 +554,9 @@ again:
  			progress++;
  			continue;
  		}
@@ -13169,7 +13750,7 @@ diff -ruN linux-2.6.23/mm/memory.c linux-2.6.23-lm32/mm/memory.c
  		progress += 8;
  	} while (dst_pte++, src_pte++, addr += PAGE_SIZE, addr != end);
  
-@@ -1586,34 +1620,6 @@
+@@ -1586,34 +1620,6 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
  	return pte;
  }
  
@@ -13204,10 +13785,11 @@ diff -ruN linux-2.6.23/mm/memory.c linux-2.6.23-lm32/mm/memory.c
  /*
   * This routine handles present pages, when users try to write
   * to a shared page. It is done by copying the page to a new address
-diff -ruN linux-2.6.23/net/socket.c linux-2.6.23-lm32/net/socket.c
---- linux-2.6.23/net/socket.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/net/socket.c	2009-12-22 02:23:42.000000000 +0100
-@@ -1645,6 +1645,10 @@
+diff --git a/net/socket.c b/net/socket.c
+index b09eb90..51eae26 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1645,6 +1645,10 @@ asmlinkage long sys_recvfrom(int fd, void __user *ubuf, size_t size,
  	if (!sock)
  		goto out_put;
  
@@ -13218,9 +13800,10 @@ diff -ruN linux-2.6.23/net/socket.c linux-2.6.23-lm32/net/socket.c
  	msg.msg_control = NULL;
  	msg.msg_controllen = 0;
  	msg.msg_iovlen = 1;
-diff -ruN linux-2.6.23/scripts/kallsyms.c linux-2.6.23-lm32/scripts/kallsyms.c
---- linux-2.6.23/scripts/kallsyms.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/scripts/kallsyms.c	2009-12-22 02:23:42.000000000 +0100
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index 1f11d84..779710b 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
 @@ -31,6 +31,19 @@
  
  #define KSYM_NAME_LEN		128
@@ -13241,10 +13824,11 @@ diff -ruN linux-2.6.23/scripts/kallsyms.c linux-2.6.23-lm32/scripts/kallsyms.c
  
  struct sym_entry {
  	unsigned long long addr;
-diff -ruN linux-2.6.23/scripts/unifdef.c linux-2.6.23-lm32/scripts/unifdef.c
---- linux-2.6.23/scripts/unifdef.c	2007-10-09 22:31:38.000000000 +0200
-+++ linux-2.6.23-lm32/scripts/unifdef.c	2009-12-22 02:23:42.000000000 +0100
-@@ -206,7 +206,7 @@
+diff --git a/scripts/unifdef.c b/scripts/unifdef.c
+index 552025e..05a31a6 100644
+--- a/scripts/unifdef.c
++++ b/scripts/unifdef.c
+@@ -206,7 +206,7 @@ static void             done(void);
  static void             error(const char *);
  static int              findsym(const char *);
  static void             flushline(bool);
@@ -13253,7 +13837,7 @@ diff -ruN linux-2.6.23/scripts/unifdef.c linux-2.6.23-lm32/scripts/unifdef.c
  static Linetype         ifeval(const char **);
  static void             ignoreoff(void);
  static void             ignoreon(void);
-@@ -512,7 +512,7 @@
+@@ -512,7 +512,7 @@ process(void)
  
  	for (;;) {
  		linenum++;
@@ -13262,7 +13846,7 @@ diff -ruN linux-2.6.23/scripts/unifdef.c linux-2.6.23-lm32/scripts/unifdef.c
  		trans_table[ifstate[depth]][lineval]();
  		debug("process %s -> %s depth %d",
  		    linetype_name[lineval],
-@@ -526,7 +526,7 @@
+@@ -526,7 +526,7 @@ process(void)
   * help from skipcomment().
   */
  static Linetype

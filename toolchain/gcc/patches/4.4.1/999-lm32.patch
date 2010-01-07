@@ -1,6 +1,29 @@
-diff -ruN gcc-4.4.1/gcc/config/lm32/arithmetic.c gcc-4.4.1-lm32/gcc/config/lm32/arithmetic.c
---- gcc-4.4.1/gcc/config/lm32/arithmetic.c	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/arithmetic.c	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 60a86ee..9e253d3 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -1357,6 +1357,16 @@ iq2000*-*-elf*)
+         out_file=iq2000/iq2000.c
+         md_file=iq2000/iq2000.md
+         ;;
++lm32-*-elf*)
++        tm_file="dbxelf.h elfos.h ${tm_file}"
++        tmake_file="lm32/t-lm32"
++	tmake_file="${tmake_file} lm32/t-fprules-softfp soft-fp/t-softfp"
++        ;;
++lm32-*-linux*)
++        tm_file="dbxelf.h elfos.h ${tm_file} linux.h lm32/linux-elf.h"
++        tmake_file="lm32/t-lm32"
++	tmake_file="${tmake_file} lm32/t-fprules-softfp soft-fp/t-softfp"
++        ;;
+ m32r-*-elf*)
+ 	tm_file="dbxelf.h elfos.h svr4.h ${tm_file}"
+ 	extra_parts="crtinit.o crtfini.o"
+diff --git a/gcc/config/lm32/arithmetic.c b/gcc/config/lm32/arithmetic.c
+new file mode 100644
+index 0000000..2548c92
+--- /dev/null
++++ b/gcc/config/lm32/arithmetic.c
 @@ -0,0 +1,305 @@
 +/* Fixed-point arithmetic for Lattice Mico32.
 +   Contributed by Jon Beniston <jon@beniston.com> 
@@ -307,9 +330,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/arithmetic.c gcc-4.4.1-lm32/gcc/config/lm32/
 +#endif
 +
 +#endif 
-diff -ruN gcc-4.4.1/gcc/config/lm32/crti.S gcc-4.4.1-lm32/gcc/config/lm32/crti.S
---- gcc-4.4.1/gcc/config/lm32/crti.S	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/crti.S	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/crti.S b/gcc/config/lm32/crti.S
+new file mode 100644
+index 0000000..82da018
+--- /dev/null
++++ b/gcc/config/lm32/crti.S
 @@ -0,0 +1,45 @@
 +# crti.S for Lattice Mico32 
 +# Contributed by Jon Beniston <jon@beniston.com>
@@ -356,9 +381,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/crti.S gcc-4.4.1-lm32/gcc/config/lm32/crti.S
 +_fini:        
 +        addi    sp, sp, -4        
 +        sw      (sp+4), ra
-diff -ruN gcc-4.4.1/gcc/config/lm32/crtn.S gcc-4.4.1-lm32/gcc/config/lm32/crtn.S
---- gcc-4.4.1/gcc/config/lm32/crtn.S	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/crtn.S	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/crtn.S b/gcc/config/lm32/crtn.S
+new file mode 100644
+index 0000000..b853078
+--- /dev/null
++++ b/gcc/config/lm32/crtn.S
 @@ -0,0 +1,42 @@
 +# crtn.S for Lattice Mico32
 +# Contributed by Jon Beniston <jon@beniston.com>
@@ -402,9 +429,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/crtn.S gcc-4.4.1-lm32/gcc/config/lm32/crtn.S
 +        addi    sp, sp, 4
 +        ret
 +        
-diff -ruN gcc-4.4.1/gcc/config/lm32/lib1funcs.S gcc-4.4.1-lm32/gcc/config/lm32/lib1funcs.S
---- gcc-4.4.1/gcc/config/lm32/lib1funcs.S	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/lib1funcs.S	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/lib1funcs.S b/gcc/config/lm32/lib1funcs.S
+new file mode 100644
+index 0000000..36c969d
+--- /dev/null
++++ b/gcc/config/lm32/lib1funcs.S
 @@ -0,0 +1,429 @@
 +# lib1funcs.S for Lattice Mico32 
 +# Contributed by Jon Beniston <jon@beniston.com>
@@ -835,9 +864,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/lib1funcs.S gcc-4.4.1-lm32/gcc/config/lm32/l
 +        .word   __ashrsi3_30
 +        .word   __ashrsi3_31
 +        
-diff -ruN gcc-4.4.1/gcc/config/lm32/linux-elf.h gcc-4.4.1-lm32/gcc/config/lm32/linux-elf.h
---- gcc-4.4.1/gcc/config/lm32/linux-elf.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/linux-elf.h	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/linux-elf.h b/gcc/config/lm32/linux-elf.h
+new file mode 100644
+index 0000000..73a0229
+--- /dev/null
++++ b/gcc/config/lm32/linux-elf.h
 @@ -0,0 +1,85 @@
 +/* Definitions for LM32 running Linux-based GNU systems using ELF
 +   Copyright (C) 1993, 1994, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
@@ -924,9 +955,69 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/linux-elf.h gcc-4.4.1-lm32/gcc/config/lm32/l
 +#undef  CC1_SPEC
 +#define CC1_SPEC "%{G*} %{!fno-PIC:-fPIC}"
 +
-diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.c gcc-4.4.1-lm32/gcc/config/lm32/lm32.c
---- gcc-4.4.1/gcc/config/lm32/lm32.c	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/lm32.c	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/lm32-protos.h b/gcc/config/lm32/lm32-protos.h
+new file mode 100644
+index 0000000..94eb36b
+--- /dev/null
++++ b/gcc/config/lm32/lm32-protos.h
+@@ -0,0 +1,52 @@
++/* Prototypes of target machine functions, Lattice Mico32 architecture.
++   Contributed by Jon Beniston <jon@beniston.com>
++
++   Copyright (C) 2008 Free Software Foundation, Inc.
++
++   This file is part of GCC.
++
++   GCC is free software; you can redistribute it and/or modify it
++   under the terms of the GNU General Public License as published
++   by the Free Software Foundation; either version 3, or (at your
++   option) any later version.
++
++   GCC is distributed in the hope that it will be useful, but WITHOUT
++   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
++   License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with GCC; see the file COPYING3.  If not see
++   <http://www.gnu.org/licenses/>.  */
++
++extern int lm32_return_in_memory (tree type);
++extern void lm32_declare_object (FILE *stream, char *name, char *init_string, 
++                                 char *final_string, int size);
++extern int symbolic_operand (rtx op, enum machine_mode mode ATTRIBUTE_UNUSED);
++extern int register_or_zero_operand (rtx op, enum machine_mode mode);
++extern int register_or_K_operand (rtx op, enum machine_mode mode);
++extern int constant_K_operand (rtx op, enum machine_mode mode ATTRIBUTE_UNUSED);
++extern int register_or_L_operand (rtx op, enum machine_mode mode);
++extern int constant_L_operand (rtx op, enum machine_mode mode ATTRIBUTE_UNUSED);
++extern int register_or_memory_operand (rtx op, enum machine_mode mode);
++extern int register_operand (rtx op, enum machine_mode mode);
++extern int const_ok_for_base_offset (rtx op, enum machine_mode mode);
++extern void lm32_expand_prologue (void);
++extern void lm32_expand_epilogue (void);
++extern HOST_WIDE_INT lm32_compute_frame_size (int size);
++extern void lm32_print_operand (FILE *file, rtx op, int letter);
++extern void lm32_print_operand_address (FILE *file, rtx addr);
++extern rtx lm32_function_arg (CUMULATIVE_ARGS cum, enum machine_mode mode,
++                              tree type, int named);
++extern void lm32_override_options (void);
++extern HOST_WIDE_INT lm32_compute_initial_elimination_offset (int from, 
++                                                             int to);
++extern int lm32_can_use_return (void);
++extern rtx lm32_return_addr_rtx (int count, rtx frame);
++#ifdef RTX_CODE
++extern void gen_int_relational (enum rtx_code code, rtx result, rtx cmp0, 
++                                rtx cmp1, rtx destination);
++#endif
++extern int lm32_expand_block_move (rtx *);
++extern int nonpic_symbol_mentioned_p (rtx);
++extern rtx lm32_legitimize_pic_address (rtx, enum machine_mode, rtx);
+diff --git a/gcc/config/lm32/lm32.c b/gcc/config/lm32/lm32.c
+new file mode 100644
+index 0000000..a4467c7
+--- /dev/null
++++ b/gcc/config/lm32/lm32.c
 @@ -0,0 +1,869 @@
 +/* Subroutines used for code generation on the Lattice Mico32 architecture.
 +   Contributed by Jon Beniston <jon@beniston.com>
@@ -1797,9 +1888,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.c gcc-4.4.1-lm32/gcc/config/lm32/lm32.c
 +
 +  return 0;
 +}
-diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.h gcc-4.4.1-lm32/gcc/config/lm32/lm32.h
---- gcc-4.4.1/gcc/config/lm32/lm32.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/lm32.h	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/lm32.h b/gcc/config/lm32/lm32.h
+new file mode 100644
+index 0000000..9dfd1ba
+--- /dev/null
++++ b/gcc/config/lm32/lm32.h
 @@ -0,0 +1,657 @@
 +/* Definitions of target machine for GNU compiler, Lattice Mico32 architecture.
 +   Contributed by Jon Beniston <jon@beniston.com>
@@ -2458,9 +2551,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.h gcc-4.4.1-lm32/gcc/config/lm32/lm32.h
 +#endif
 +
 +#define STORE_FLAG_VALUE 1
-diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.md gcc-4.4.1-lm32/gcc/config/lm32/lm32.md
---- gcc-4.4.1/gcc/config/lm32/lm32.md	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/lm32.md	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/lm32.md b/gcc/config/lm32/lm32.md
+new file mode 100644
+index 0000000..6fab6b6
+--- /dev/null
++++ b/gcc/config/lm32/lm32.md
 @@ -0,0 +1,1233 @@
 +;; Machine description of the Lattice Mico32 architecture for GNU C compiler.
 +;; Contributed by Jon Beniston <jon@beniston.com>
@@ -3695,9 +3790,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.md gcc-4.4.1-lm32/gcc/config/lm32/lm32.
 +  [(set_attr "length" "0")]
 +)
 +
-diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.opt gcc-4.4.1-lm32/gcc/config/lm32/lm32.opt
---- gcc-4.4.1/gcc/config/lm32/lm32.opt	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/lm32.opt	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/lm32.opt b/gcc/config/lm32/lm32.opt
+new file mode 100644
+index 0000000..07f9c0f
+--- /dev/null
++++ b/gcc/config/lm32/lm32.opt
 @@ -0,0 +1,40 @@
 +; Options for the Lattice Mico32 port of the compiler.
 +; Contributed by Jon Beniston <jon@beniston.com>
@@ -3739,65 +3836,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/lm32.opt gcc-4.4.1-lm32/gcc/config/lm32/lm32
 +muser-enabled
 +Target Report Mask(USER_ENABLED)
 +Enable user-defined instructions
-diff -ruN gcc-4.4.1/gcc/config/lm32/lm32-protos.h gcc-4.4.1-lm32/gcc/config/lm32/lm32-protos.h
---- gcc-4.4.1/gcc/config/lm32/lm32-protos.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/lm32-protos.h	2009-12-22 01:57:48.000000000 +0100
-@@ -0,0 +1,52 @@
-+/* Prototypes of target machine functions, Lattice Mico32 architecture.
-+   Contributed by Jon Beniston <jon@beniston.com>
-+
-+   Copyright (C) 2008 Free Software Foundation, Inc.
-+
-+   This file is part of GCC.
-+
-+   GCC is free software; you can redistribute it and/or modify it
-+   under the terms of the GNU General Public License as published
-+   by the Free Software Foundation; either version 3, or (at your
-+   option) any later version.
-+
-+   GCC is distributed in the hope that it will be useful, but WITHOUT
-+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-+   License for more details.
-+
-+   You should have received a copy of the GNU General Public License
-+   along with GCC; see the file COPYING3.  If not see
-+   <http://www.gnu.org/licenses/>.  */
-+
-+extern int lm32_return_in_memory (tree type);
-+extern void lm32_declare_object (FILE *stream, char *name, char *init_string, 
-+                                 char *final_string, int size);
-+extern int symbolic_operand (rtx op, enum machine_mode mode ATTRIBUTE_UNUSED);
-+extern int register_or_zero_operand (rtx op, enum machine_mode mode);
-+extern int register_or_K_operand (rtx op, enum machine_mode mode);
-+extern int constant_K_operand (rtx op, enum machine_mode mode ATTRIBUTE_UNUSED);
-+extern int register_or_L_operand (rtx op, enum machine_mode mode);
-+extern int constant_L_operand (rtx op, enum machine_mode mode ATTRIBUTE_UNUSED);
-+extern int register_or_memory_operand (rtx op, enum machine_mode mode);
-+extern int register_operand (rtx op, enum machine_mode mode);
-+extern int const_ok_for_base_offset (rtx op, enum machine_mode mode);
-+extern void lm32_expand_prologue (void);
-+extern void lm32_expand_epilogue (void);
-+extern HOST_WIDE_INT lm32_compute_frame_size (int size);
-+extern void lm32_print_operand (FILE *file, rtx op, int letter);
-+extern void lm32_print_operand_address (FILE *file, rtx addr);
-+extern rtx lm32_function_arg (CUMULATIVE_ARGS cum, enum machine_mode mode,
-+                              tree type, int named);
-+extern void lm32_override_options (void);
-+extern HOST_WIDE_INT lm32_compute_initial_elimination_offset (int from, 
-+                                                             int to);
-+extern int lm32_can_use_return (void);
-+extern rtx lm32_return_addr_rtx (int count, rtx frame);
-+#ifdef RTX_CODE
-+extern void gen_int_relational (enum rtx_code code, rtx result, rtx cmp0, 
-+                                rtx cmp1, rtx destination);
-+#endif
-+extern int lm32_expand_block_move (rtx *);
-+extern int nonpic_symbol_mentioned_p (rtx);
-+extern rtx lm32_legitimize_pic_address (rtx, enum machine_mode, rtx);
-diff -ruN gcc-4.4.1/gcc/config/lm32/predicates.md gcc-4.4.1-lm32/gcc/config/lm32/predicates.md
---- gcc-4.4.1/gcc/config/lm32/predicates.md	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/predicates.md	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/predicates.md b/gcc/config/lm32/predicates.md
+new file mode 100644
+index 0000000..f990254
+--- /dev/null
++++ b/gcc/config/lm32/predicates.md
 @@ -0,0 +1,58 @@
 +;; Predicate definitions for Lattice Mico32.
 +;; Contributed by Jon Beniston <jon@beniston.com>
@@ -3857,9 +3900,11 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/predicates.md gcc-4.4.1-lm32/gcc/config/lm32
 +  (ior (match_code "label_ref")
 +       (match_code "symbol_ref")))
 +       
-diff -ruN gcc-4.4.1/gcc/config/lm32/sfp-machine.h gcc-4.4.1-lm32/gcc/config/lm32/sfp-machine.h
---- gcc-4.4.1/gcc/config/lm32/sfp-machine.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/sfp-machine.h	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/sfp-machine.h b/gcc/config/lm32/sfp-machine.h
+new file mode 100644
+index 0000000..1903848
+--- /dev/null
++++ b/gcc/config/lm32/sfp-machine.h
 @@ -0,0 +1,51 @@
 +#define _FP_W_TYPE_SIZE		32
 +#define _FP_W_TYPE		unsigned long
@@ -3912,18 +3957,22 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/sfp-machine.h gcc-4.4.1-lm32/gcc/config/lm32
 +# define strong_alias(name, aliasname) _strong_alias(name, aliasname)
 +# define _strong_alias(name, aliasname) \
 +  extern __typeof (name) aliasname __attribute__ ((alias (#name)));
-diff -ruN gcc-4.4.1/gcc/config/lm32/t-fprules-softfp gcc-4.4.1-lm32/gcc/config/lm32/t-fprules-softfp
---- gcc-4.4.1/gcc/config/lm32/t-fprules-softfp	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/t-fprules-softfp	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/t-fprules-softfp b/gcc/config/lm32/t-fprules-softfp
+new file mode 100644
+index 0000000..f99f51c
+--- /dev/null
++++ b/gcc/config/lm32/t-fprules-softfp
 @@ -0,0 +1,5 @@
 +softfp_float_modes := sf df
 +softfp_int_modes := si di
 +softfp_extensions := sfdf
 +softfp_truncations := dfsf
 +softfp_machine_header := lm32/sfp-machine.h
-diff -ruN gcc-4.4.1/gcc/config/lm32/t-lm32 gcc-4.4.1-lm32/gcc/config/lm32/t-lm32
---- gcc-4.4.1/gcc/config/lm32/t-lm32	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/config/lm32/t-lm32	2009-12-22 01:57:48.000000000 +0100
+diff --git a/gcc/config/lm32/t-lm32 b/gcc/config/lm32/t-lm32
+new file mode 100644
+index 0000000..dcb87a5
+--- /dev/null
++++ b/gcc/config/lm32/t-lm32
 @@ -0,0 +1,19 @@
 +LIB1ASMSRC = lm32/lib1funcs.S
 +LIB1ASMFUNCS = _ashlsi3 _ashrsi3 _lshrsi3
@@ -3944,30 +3993,31 @@ diff -ruN gcc-4.4.1/gcc/config/lm32/t-lm32 gcc-4.4.1-lm32/gcc/config/lm32/t-lm32
 +
 +MULTILIB_OPTIONS = mmultiply-enabled mbarrel-shift-enabled 
 +# Don't bother building multilib with mdivide-enabled, not much of a gain
-diff -ruN gcc-4.4.1/gcc/config.gcc gcc-4.4.1-lm32/gcc/config.gcc
---- gcc-4.4.1/gcc/config.gcc	2009-04-17 13:58:41.000000000 +0200
-+++ gcc-4.4.1-lm32/gcc/config.gcc	2009-12-22 01:57:48.000000000 +0100
-@@ -1357,6 +1357,16 @@
-         out_file=iq2000/iq2000.c
-         md_file=iq2000/iq2000.md
-         ;;
-+lm32-*-elf*)
-+        tm_file="dbxelf.h elfos.h ${tm_file}"
-+        tmake_file="lm32/t-lm32"
-+	tmake_file="${tmake_file} lm32/t-fprules-softfp soft-fp/t-softfp"
-+        ;;
-+lm32-*-linux*)
-+        tm_file="dbxelf.h elfos.h ${tm_file} linux.h lm32/linux-elf.h"
-+        tmake_file="lm32/t-lm32"
-+	tmake_file="${tmake_file} lm32/t-fprules-softfp soft-fp/t-softfp"
-+        ;;
- m32r-*-elf*)
- 	tm_file="dbxelf.h elfos.h svr4.h ${tm_file}"
- 	extra_parts="crtinit.o crtfini.o"
-diff -ruN gcc-4.4.1/gcc/testsuite/gcc.dg/20020312-2.c gcc-4.4.1-lm32/gcc/testsuite/gcc.dg/20020312-2.c
---- gcc-4.4.1/gcc/testsuite/gcc.dg/20020312-2.c	2007-04-23 18:18:01.000000000 +0200
-+++ gcc-4.4.1-lm32/gcc/testsuite/gcc.dg/20020312-2.c	2009-12-22 01:57:48.000000000 +0100
-@@ -30,6 +30,8 @@
+diff --git a/gcc/testsuite/g++.dg/other/packed1.C b/gcc/testsuite/g++.dg/other/packed1.C
+index b1b829b..91d0ed3 100644
+--- a/gcc/testsuite/g++.dg/other/packed1.C
++++ b/gcc/testsuite/g++.dg/other/packed1.C
+@@ -1,4 +1,4 @@
+-// { dg-do run { xfail arm-*-* sh-*-* } }
++// { dg-do run { xfail arm-*-* sh-*-* lm32-*-* } }
+ 
+ // NMS:2003-04-21 this fails on strict aligned architectures again,
+ // the patch was reverted because it broke something more important.
+diff --git a/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C b/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C
+index d91982f..05e1163 100644
+--- a/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C
++++ b/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C
+@@ -1,4 +1,4 @@
+-// { dg-do run { xfail rs6000-*-* powerpc-*-eabi m68k-*-coff mn10300-*-* v850-*-* sh-*-* sh64-*-* h8*-*-* xtensa*-*-* m32r*-*-* } }
++// { dg-do run { xfail rs6000-*-* powerpc-*-eabi m68k-*-coff mn10300-*-* v850-*-* sh-*-* sh64-*-* h8*-*-* xtensa*-*-* m32r*-*-* lm32-*-* } }
+ // Test that variadic function calls using thunks work right.
+ // Note that this will break on any target that uses the generic thunk
+ //  support, because it doesn't support variadic functions.
+diff --git a/gcc/testsuite/gcc.dg/20020312-2.c b/gcc/testsuite/gcc.dg/20020312-2.c
+index c4a2774..d16db34 100644
+--- a/gcc/testsuite/gcc.dg/20020312-2.c
++++ b/gcc/testsuite/gcc.dg/20020312-2.c
+@@ -30,6 +30,8 @@ extern void abort (void);
  # define PIC_REG  "ebx"
  #elif defined(__ia64__)
  /* PIC register is r1, but is used even without -fpic.  */
@@ -3976,28 +4026,11 @@ diff -ruN gcc-4.4.1/gcc/testsuite/gcc.dg/20020312-2.c gcc-4.4.1-lm32/gcc/testsui
  #elif defined(__M32R__)
  /* No pic register.  */
  #elif defined(__m68k__)
-diff -ruN gcc-4.4.1/gcc/testsuite/g++.dg/other/packed1.C gcc-4.4.1-lm32/gcc/testsuite/g++.dg/other/packed1.C
---- gcc-4.4.1/gcc/testsuite/g++.dg/other/packed1.C	2008-12-08 19:34:59.000000000 +0100
-+++ gcc-4.4.1-lm32/gcc/testsuite/g++.dg/other/packed1.C	2009-12-22 01:57:48.000000000 +0100
-@@ -1,4 +1,4 @@
--// { dg-do run { xfail arm-*-* sh-*-* } }
-+// { dg-do run { xfail arm-*-* sh-*-* lm32-*-* } }
- 
- // NMS:2003-04-21 this fails on strict aligned architectures again,
- // the patch was reverted because it broke something more important.
-diff -ruN gcc-4.4.1/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C gcc-4.4.1-lm32/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C
---- gcc-4.4.1/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C	2008-08-06 18:02:16.000000000 +0200
-+++ gcc-4.4.1-lm32/gcc/testsuite/g++.old-deja/g++.jason/thunk3.C	2009-12-22 01:57:48.000000000 +0100
-@@ -1,4 +1,4 @@
--// { dg-do run { xfail rs6000-*-* powerpc-*-eabi m68k-*-coff mn10300-*-* v850-*-* sh-*-* sh64-*-* h8*-*-* xtensa*-*-* m32r*-*-* } }
-+// { dg-do run { xfail rs6000-*-* powerpc-*-eabi m68k-*-coff mn10300-*-* v850-*-* sh-*-* sh64-*-* h8*-*-* xtensa*-*-* m32r*-*-* lm32-*-* } }
- // Test that variadic function calls using thunks work right.
- // Note that this will break on any target that uses the generic thunk
- //  support, because it doesn't support variadic functions.
-diff -ruN gcc-4.4.1/gcc/testsuite/lib/target-supports.exp gcc-4.4.1-lm32/gcc/testsuite/lib/target-supports.exp
---- gcc-4.4.1/gcc/testsuite/lib/target-supports.exp	2009-07-21 09:22:51.000000000 +0200
-+++ gcc-4.4.1-lm32/gcc/testsuite/lib/target-supports.exp	2009-12-22 01:57:48.000000000 +0100
-@@ -495,7 +495,8 @@
+diff --git a/gcc/testsuite/lib/target-supports.exp b/gcc/testsuite/lib/target-supports.exp
+index ce74748..60da9e7 100644
+--- a/gcc/testsuite/lib/target-supports.exp
++++ b/gcc/testsuite/lib/target-supports.exp
+@@ -495,7 +495,8 @@ proc check_profiling_available { test_what } {
  	     || [istarget crisv32-*-*]
  	     || [istarget fido-*-elf]
  	     || [istarget h8300-*-*]
@@ -4007,32 +4040,11 @@ diff -ruN gcc-4.4.1/gcc/testsuite/lib/target-supports.exp gcc-4.4.1-lm32/gcc/tes
  	     || [istarget m68k-*-elf]
  	     || [istarget m68k-*-uclinux*]
  	     || [istarget mips*-*-elf*]
-diff -ruN gcc-4.4.1/libgcc/config/lm32/t-elf gcc-4.4.1-lm32/libgcc/config/lm32/t-elf
---- gcc-4.4.1/libgcc/config/lm32/t-elf	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/libgcc/config/lm32/t-elf	2009-12-22 01:57:48.000000000 +0100
-@@ -0,0 +1,12 @@
-+# Assemble startup files.
-+
-+$(T)crti.o: $(gcc_srcdir)/config/lm32/crti.S $(GCC_PASSES)
-+	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
-+	-c -o $(T)crti.o -x assembler-with-cpp $(gcc_srcdir)/config/lm32/crti.S
-+
-+$(T)crtn.o: $(gcc_srcdir)/config/lm32/crtn.S $(GCC_PASSES)
-+	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
-+	-c -o $(T)crtn.o -x assembler-with-cpp $(gcc_srcdir)/config/lm32/crtn.S
-+
-+CRTSTUFF_T_CFLAGS = -G 0
-+TARGET_LIBGCC2_CFLAGS = -G 0
-diff -ruN gcc-4.4.1/libgcc/config/lm32/t-linux gcc-4.4.1-lm32/libgcc/config/lm32/t-linux
---- gcc-4.4.1/libgcc/config/lm32/t-linux	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.4.1-lm32/libgcc/config/lm32/t-linux	2009-12-22 01:57:48.000000000 +0100
-@@ -0,0 +1,2 @@
-+CRTSTUFF_T_CFLAGS = -fPIC
-+TARGET_LIBGCC2_CFLAGS = -fPIC
-diff -ruN gcc-4.4.1/libgcc/config.host gcc-4.4.1-lm32/libgcc/config.host
---- gcc-4.4.1/libgcc/config.host	2009-04-17 13:58:41.000000000 +0200
-+++ gcc-4.4.1-lm32/libgcc/config.host	2009-12-22 01:57:48.000000000 +0100
-@@ -95,6 +95,9 @@
+diff --git a/libgcc/config.host b/libgcc/config.host
+index 55af651..4504bf4 100644
+--- a/libgcc/config.host
++++ b/libgcc/config.host
+@@ -95,6 +95,9 @@ ia64-*-*)
  hppa*-*-*)
  	cpu_type=pa
  	;;
@@ -4042,7 +4054,7 @@ diff -ruN gcc-4.4.1/libgcc/config.host gcc-4.4.1-lm32/libgcc/config.host
  m32r*-*-*)
          cpu_type=m32r
          ;;
-@@ -355,6 +358,14 @@
+@@ -355,6 +358,14 @@ ia64*-*-hpux*)
  	;;
  iq2000*-*-elf*)
          ;;
@@ -4057,3 +4069,29 @@ diff -ruN gcc-4.4.1/libgcc/config.host gcc-4.4.1-lm32/libgcc/config.host
  m32r-*-elf*|m32r-*-rtems*)
   	;;
  m32rle-*-elf*)
+diff --git a/libgcc/config/lm32/t-elf b/libgcc/config/lm32/t-elf
+new file mode 100644
+index 0000000..e9360ad
+--- /dev/null
++++ b/libgcc/config/lm32/t-elf
+@@ -0,0 +1,12 @@
++# Assemble startup files.
++
++$(T)crti.o: $(gcc_srcdir)/config/lm32/crti.S $(GCC_PASSES)
++	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
++	-c -o $(T)crti.o -x assembler-with-cpp $(gcc_srcdir)/config/lm32/crti.S
++
++$(T)crtn.o: $(gcc_srcdir)/config/lm32/crtn.S $(GCC_PASSES)
++	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
++	-c -o $(T)crtn.o -x assembler-with-cpp $(gcc_srcdir)/config/lm32/crtn.S
++
++CRTSTUFF_T_CFLAGS = -G 0
++TARGET_LIBGCC2_CFLAGS = -G 0
+diff --git a/libgcc/config/lm32/t-linux b/libgcc/config/lm32/t-linux
+new file mode 100644
+index 0000000..04fb5cd
+--- /dev/null
++++ b/libgcc/config/lm32/t-linux
+@@ -0,0 +1,2 @@
++CRTSTUFF_T_CFLAGS = -fPIC
++TARGET_LIBGCC2_CFLAGS = -fPIC
