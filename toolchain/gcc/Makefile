@@ -45,6 +45,9 @@ else
   ifeq ($(PKG_VERSION),4.1.2)
     PKG_MD5SUM:=a4a3eb15c96030906d8494959eeda23c
   endif
+  ifeq ($(PKG_VERSION),4.2.1)
+    PKG_MD5SUM:=cba410e6ff70f7d7f4be7a0267707fd0
+  endif
   ifeq ($(PKG_VERSION),4.2.4)
     PKG_MD5SUM:=d79f553e7916ea21c556329eacfeaa16
   endif
@@ -246,6 +249,7 @@ define Stage2/Install
 	$(GCC_MAKE) -C $(HOST_BUILD_DIR2) install
 	# Set up the symlinks to enable lying about target name.
 	set -e; \
+	[ "$(REAL_GNU_TARGET_NAME)" = "$(GNU_TARGET_NAME)" ] || \
 	(cd $(TOOLCHAIN_DIR)/usr; \
 		ln -sf $(REAL_GNU_TARGET_NAME) $(GNU_TARGET_NAME); \
 		cd bin; \
