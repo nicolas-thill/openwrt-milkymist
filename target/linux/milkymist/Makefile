@@ -18,6 +18,10 @@ LINUX_VERSION:=2.6.23
 
 include $(INCLUDE_DIR)/target.mk
 
+CFLAGS:=-O2 -pipe  -funit-at-a-time -mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
+
+DEFAULT_PACKAGES:=busybox
+
 KERNEL_MAKEOPTS += LDFLAGS_BUILD_ID=""
 
 define Target/Description
