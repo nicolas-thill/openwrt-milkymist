@@ -98,17 +98,19 @@ index 0000000..63fb19d
 @@ -0,0 +1 @@
 +TARGET_lm32=y
 diff --git a/include/elf.h b/include/elf.h
-index 19805d7..651313a 100644
+index 19805d7..67478e4 100644
 --- a/include/elf.h
 +++ b/include/elf.h
-@@ -260,6 +260,7 @@ typedef struct
+@@ -260,7 +260,8 @@ typedef struct
  #define EM_BLACKFIN	106		/* Analog Devices Blackfin */
  #define EM_ALTERA_NIOS2	113	/* Altera Nios II soft-core processor */
  #define EM_CRX		114		/* National Semiconductor CRX */
+-#define EM_NUM		95
 +#define EM_LATTICEMICO32	138	/* Lattice Mico32 */
- #define EM_NUM		95
++#define EM_NUM		96
  
  /* If it is necessary to assign new unofficial EM_* values, please pick large
+    random numbers (0x8523, 0xa7f2, etc.) to minimize the chances of collision
 diff --git a/libc/sysdeps/linux/common/getpagesize.c b/libc/sysdeps/linux/common/getpagesize.c
 index efb5fcb..472b03d 100644
 --- a/libc/sysdeps/linux/common/getpagesize.c
