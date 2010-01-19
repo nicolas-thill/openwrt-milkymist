@@ -1,0 +1,276 @@
+diff --git a/bfd/config.bfd b/bfd/config.bfd
+index e340251..2550515 100644
+--- a/bfd/config.bfd
++++ b/bfd/config.bfd
+@@ -742,16 +742,11 @@ case "${targ}" in
+     targ_defvec=bfd_elf32_iq2000_vec
+     ;;
+ 
+-  lm32-*-elf | lm32-*-rtems*)
++  lm32-*-*)
+     targ_defvec=bfd_elf32_lm32_vec
+     targ_selvecs=bfd_elf32_lm32fdpic_vec
+     ;;
+     
+-  lm32-*-*linux*)
+-    targ_defvec=bfd_elf32_lm32fdpic_vec
+-    targ_selvecs=bfd_elf32_lm32_vec
+-    ;;
+-    
+   m32c-*-elf | m32c-*-rtems*)
+     targ_defvec=bfd_elf32_m32c_vec
+     ;;
+diff --git a/bfd/elf32-lm32.c b/bfd/elf32-lm32.c
+index 7053568..7295ca9 100644
+--- a/bfd/elf32-lm32.c
++++ b/bfd/elf32-lm32.c
+@@ -597,7 +597,8 @@ lm32_info_to_howto_rela (bfd *abfd ATTRIBUTE_UNUSED,
+ static bfd_boolean
+ lm32_elf_object_p (bfd *abfd)
+ {
+-  return bfd_default_set_arch_mach (abfd, bfd_arch_lm32, bfd_mach_lm32);
++  bfd_default_set_arch_mach (abfd, bfd_arch_lm32, bfd_mach_lm32);
++  return (((elf_elfheader (abfd)->e_flags & EF_LM32_FDPIC) != 0) == (IS_FDPIC (abfd)));
+ }
+ 
+ /* Set machine type flags just before file is written out. */
+@@ -606,11 +607,11 @@ static void
+ lm32_elf_final_write_processing (bfd *abfd, bfd_boolean linker ATTRIBUTE_UNUSED)
+ {
+   elf_elfheader (abfd)->e_machine = EM_LATTICEMICO32;
+-  elf_elfheader (abfd)->e_flags &=~ EF_LM32_MACH;
++  elf_elfheader (abfd)->e_flags &=~ EF_LM32_CPU_FLAGS;
+   switch (bfd_get_mach (abfd))
+     {
+       case bfd_mach_lm32:
+-        elf_elfheader (abfd)->e_flags |= E_LM32_MACH;
++        elf_elfheader (abfd)->e_flags |= EF_LM32_CPU_GENERIC;
+         break;
+       default:
+         abort ();
+@@ -2776,6 +2777,17 @@ lm32_elf_modify_program_headers (bfd *output_bfd,
+   return TRUE;
+ }
+ 
++/* Function to set the ELF flag bits.  */
++
++static bfd_boolean
++lm32_elf_set_private_flags (bfd *abfd, flagword flags)
++{
++  elf_elfheader (abfd)->e_flags = flags;
++  elf_flags_init (abfd) = TRUE;
++  return TRUE;
++}
++
++/* Copy backend specific data from one object module to another.  */
+ 
+ static bfd_boolean
+ lm32_elf_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
+@@ -2796,7 +2808,6 @@ lm32_elf_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
+   return TRUE;
+ }
+ 
+-
+ static bfd_boolean
+ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
+ {
+@@ -2839,6 +2850,75 @@ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
+   return TRUE;
+ }
+ 
++/* Merge backend specific data from an object file to the output
++   object file when linking.  */
++
++static bfd_boolean
++lm32_elf_merge_private_bfd_data (bfd *ibfd, bfd *obfd)
++{
++  flagword old_flags, new_flags;
++  bfd_boolean error = FALSE;
++
++  new_flags = elf_elfheader (ibfd)->e_flags;
++  old_flags = elf_elfheader (obfd)->e_flags;
++
++  if (new_flags & EF_LM32_FDPIC)
++    new_flags &= ~EF_LM32_PIC;
++
++  if (!elf_flags_init (obfd))			/* First call, no flags set.  */
++    {
++      elf_flags_init (obfd) = TRUE;
++      elf_elfheader (obfd)->e_flags = new_flags;
++    }
++
++  if (((new_flags & EF_LM32_FDPIC) == 0) != (! IS_FDPIC (obfd)))
++    {
++      error = TRUE;
++      if (IS_FDPIC (obfd))
++        (*_bfd_error_handler)
++          (_("%s: cannot link non-fdpic object file into fdpic executable"),
++            bfd_get_filename (ibfd));
++      else
++        (*_bfd_error_handler)
++          (_("%s: cannot link fdpic object file into non-fdpic executable"),
++           bfd_get_filename (ibfd));
++    }
++
++  if (error)
++    bfd_set_error (bfd_error_bad_value);
++
++  return !error;
++}
++
++/* Display the flags field.  */
++
++static bfd_boolean
++lm32_elf_print_private_bfd_data (bfd * abfd, PTR ptr)
++{
++  FILE *file = (FILE *) ptr;
++  flagword flags;
++
++  BFD_ASSERT (abfd != NULL && ptr != NULL);
++
++  /* Print normal ELF private data.  */
++  _bfd_elf_print_private_bfd_data (abfd, ptr);
++
++  flags = elf_elfheader (abfd)->e_flags;
++
++  /* xgettext:c-format */
++  fprintf (file, _("private flags = %lx:"), elf_elfheader (abfd)->e_flags);
++
++  if (flags & EF_LM32_PIC)
++    fprintf (file, " -fpic");
++
++  if (flags & EF_LM32_FDPIC)
++    fprintf (file, " -mfdpic");
++
++  fputc ('\n', file);
++
++  return TRUE;
++}
++
+ 
+ #define ELF_ARCH                bfd_arch_lm32
+ #define ELF_MACHINE_CODE        EM_LATTICEMICO32
+@@ -2873,6 +2953,10 @@ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
+ #define elf_backend_adjust_dynamic_symbol       lm32_elf_adjust_dynamic_symbol
+ #define elf_backend_finish_dynamic_symbol       lm32_elf_finish_dynamic_symbol
+ #define elf_backend_relocate_section            lm32_elf_relocate_section
++#define bfd_elf32_bfd_set_private_flags         lm32_elf_set_private_flags
++#define bfd_elf32_bfd_copy_private_bfd_data     lm32_elf_copy_private_bfd_data
++#define bfd_elf32_bfd_merge_private_bfd_data    lm32_elf_merge_private_bfd_data
++#define bfd_elf32_bfd_print_private_bfd_data    lm32_elf_print_private_bfd_data
+ 
+ #include "elf32-target.h"
+ 
+diff --git a/bfd/targets.c b/bfd/targets.c
+index a33790b..3a920dc 100644
+--- a/bfd/targets.c
++++ b/bfd/targets.c
+@@ -941,6 +941,7 @@ static const bfd_target * const _bfd_target_vector[] =
+ 	&bfd_elf32_ip2k_vec,
+ 	&bfd_elf32_iq2000_vec,
+ 	&bfd_elf32_lm32_vec,
++	&bfd_elf32_lm32_fdpic_vec,
+ 	&bfd_elf32_little_generic_vec,
+ 	&bfd_elf32_littlearc_vec,
+ 	&bfd_elf32_littlearm_vec,
+diff --git a/gas/config/tc-lm32.c b/gas/config/tc-lm32.c
+index 5d02c3a..30de022 100644
+--- a/gas/config/tc-lm32.c
++++ b/gas/config/tc-lm32.c
+@@ -51,6 +51,18 @@ typedef struct
+   int indices[MAX_OPERAND_INSTANCES];
+ } lm32_insn;
+ 
++/* Flags to set in the elf header */
++
++#define DEFAULT_FLAGS 0
++
++#ifdef TE_LINUX
++# define DEFAULT_FDPIC	EF_LM32_FDPIC
++#else
++# define DEFAULT_FDPIC	0
++#endif
++
++static flagword lm32_flags = DEFAULT_FLAGS | DEFAULT_FDPIC;
++
+ /* Configuration options */
+ 
+ #define LM_CFG_MULTIPLIY_ENABLED        0x0001
+@@ -108,6 +120,10 @@ struct option md_longopts[] =
+   { "mbreak-enabled",               no_argument, NULL, OPTION_BREAK_ENABLED },
+ #define OPTION_ALL_ENABLED              (OPTION_MD_BASE + 9)
+   { "mall-enabled",                 no_argument, NULL, OPTION_ALL_ENABLED },
++#define OPTION_FDPIC                    (OPTION_MD_BASE + 10)
++  { "mfdpic",                       no_argument, NULL, OPTION_FDPIC },
++#define OPTION_NO_FDPIC                 (OPTION_MD_BASE + 11)
++  { "mno-fdpic",                    no_argument, NULL, OPTION_NO_FDPIC },
+ };
+ 
+ size_t md_longopts_size = sizeof (md_longopts);
+@@ -127,6 +143,8 @@ md_show_usage (FILE * fp)
+         "  -mdcache-enabled            enable data cache instructions\n"
+         "  -mbreak-enabled             enable the break instruction\n"
+         "  -mall-enabled               enable all optional instructions\n"
++        "  -mfdpic                     enable FDPIC ABI\n"
++        "  -mno-fdpic                  disable FDPIC ABI\n"
+         );
+ }
+ 
+@@ -171,6 +189,12 @@ md_parse_option (int c, char * arg ATTRIBUTE_UNUSED)
+         config |= LM_CFG_DCACHE_ENABLED;
+         config |= LM_CFG_BREAK_ENABLED;
+         break;
++      case OPTION_FDPIC:
++        lm32_flags |= EF_LM32_FDPIC;
++        break;
++      case OPTION_NO_FDPIC:
++        lm32_flags &= ~(EF_LM32_FDPIC);
++        break;
+       default:
+         return 0;
+     }
+@@ -193,6 +217,10 @@ md_begin (void)
+ 
+   /* This is a callback from cgen to gas to parse operands.  */
+   cgen_set_parse_operand_fn (gas_cgen_cpu_desc, gas_cgen_parse_operand);
++
++  /* Set the ELF flags if desired. */
++  if (lm32_flags)
++    bfd_set_private_flags (stdoutput, lm32_flags);
+ }
+ 
+ /* Turn an integer of n bytes (in val) into a stream of bytes appropriate
+diff --git a/include/elf/lm32.h b/include/elf/lm32.h
+index c20deb7..0290309 100644
+--- a/include/elf/lm32.h
++++ b/include/elf/lm32.h
+@@ -47,10 +47,14 @@ END_RELOC_NUMBERS (R_LM32_max)
+ 
+ /* Processor specific flags for the ELF header e_flags field.  */
+ 
+-#define EF_LM32_MACH                 0x00000001
++#define EF_LM32_CPU_GENERIC          0x00000001
+ 
+-/* Various CPU types.  */
++#define EF_LM32_CPU_FLAGS            (EF_LM32_CPU_GENERIC)
+ 
+-#define E_LM32_MACH                  0x1
++/* Processor specific flags for the ELF header e_flags field.  */
++#define EF_LM32_PIC                  0x00000010  /* -fpic */
++#define EF_LM32_FDPIC                0x00000020  /* -mfdpic */
++
++#define EF_LM32_PIC_FLAGS            (EF_LM32_PIC | EF_LM32_FDPIC)
+ 
+ #endif /* _ELF_LM32_H */
+diff --git a/ld/configure.tgt b/ld/configure.tgt
+index d6d86ab..2ae7383 100644
+--- a/ld/configure.tgt
++++ b/ld/configure.tgt
+@@ -306,7 +306,6 @@ ip2k-*-elf)		targ_emul=elf32ip2k
+ 			;;
+ iq2000-*-elf)           targ_emul=elf32iq2000 ; targ_extra_emuls="elf32iq10"
+ 			;;
+-lm32-*-*linux*)         targ_emul=elf32lm32fd ;;
+ lm32-*-*)               targ_emul=elf32lm32 ; targ_extra_emuls="elf32lm32fd" 
+                         ;;
+ m32c-*-elf | m32c-*-rtems*)

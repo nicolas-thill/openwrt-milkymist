@@ -1,15 +1,19 @@
 diff --git a/Rules.mak b/Rules.mak
-index f0a65af..cc254fa 100644
+index f0a65af..fa5feec 100644
 --- a/Rules.mak
 +++ b/Rules.mak
-@@ -415,6 +415,12 @@ ifeq ($(TARGET_ARCH),v850)
+@@ -415,6 +415,16 @@ ifeq ($(TARGET_ARCH),v850)
        SYMBOL_PREFIX=_
  endif
  
 +ifeq ($(TARGET_ARCH),lm32)
 +	CPU_CFLAGS-$(CONFIG_LM32)  +=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
 +	CPU_LDFLAGS-$(CONFIG_LM32) +=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
-+	PICFLAG:=
++    ifeq ($(UCLIBC_FORMAT_FDPIC_ELF),y)
++		PICFLAG:=
++    else
++		PICFLAG:=-fPIC
++    endif
 +endif
 +
  # Keep the check_gcc from being needlessly executed
@@ -86,20 +90,20 @@ index 4c6d090..334ec96 100644
  /* If it is necessary to assign new unofficial EM_* values, please pick large
     random numbers (0x8523, 0xa7f2, etc.) to minimize the chances of collision
 diff --git a/libc/misc/sysvipc/semtimedop.c b/libc/misc/sysvipc/semtimedop.c
-index ecd0438..72fa65c 100644
+index ecd0438..189a5a5 100644
 --- a/libc/misc/sysvipc/semtimedop.c
 +++ b/libc/misc/sysvipc/semtimedop.c
 @@ -4,5 +4,10 @@
   * Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
   */
  
-+#if !defined(__lm32__)
 +/* XXX: LM32 kernel is currently lacking NR_semtimedop syscall */
++#if !defined(__lm32__)
 +
  #define L_semtimedop
  #include "sem.c"
 +
-+#endif /* !defined(__lm32__) */
++#endif
 diff --git a/libc/sysdeps/linux/common/getpagesize.c b/libc/sysdeps/linux/common/getpagesize.c
 index efb5fcb..472b03d 100644
 --- a/libc/sysdeps/linux/common/getpagesize.c
@@ -238,127 +242,6 @@ index 0000000..5e109a8
 +	__set_errno(err_no);
 +	return -1;
 +}
-diff --git a/libc/sysdeps/linux/lm32/bits/elf-fdpic.h b/libc/sysdeps/linux/lm32/bits/elf-fdpic.h
-new file mode 100644
-index 0000000..5ca5177
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/elf-fdpic.h
-@@ -0,0 +1,115 @@
-+/* Copyright 2003, 2004 Free Software Foundation, Inc.
-+This file is part of the GNU C Library.
-+
-+The GNU C Library is free software; you can redistribute it and/or
-+modify it under the terms of the GNU Lesser General Public License as
-+published by the Free Software Foundation; either version 2.1 of the
-+License, or (at your option) any later version.
-+
-+In addition to the permissions in the GNU Lesser General Public
-+License, the Free Software Foundation gives you unlimited
-+permission to link the compiled version of this file with other
-+programs, and to distribute those programs without any restriction
-+coming from the use of this file.  (The GNU Lesser General Public
-+License restrictions do apply in other respects; for example, they
-+cover modification of the file, and distribution when not linked
-+into another program.)
-+
-+The GNU C Library is distributed in the hope that it will be useful,
-+but WITHOUT ANY WARRANTY; without even the implied warranty of
-+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+Library General Public License for more details.
-+
-+You should have received a copy of the GNU Lesser General Public
-+License along with the GNU C Library; see the file COPYING.LIB.  If
-+not, write to the Free Software Foundation, Inc., 675 Mass Ave,
-+Cambridge, MA 02139, USA.  */
-+
-+#ifndef _BITS_ELF_FDPIC_H
-+#define _BITS_ELF_FDPIC_H
-+
-+/* These data structures are described in the FDPIC ABI extension.
-+   The kernel passes a process a memory map, such that for every LOAD
-+   segment there is an elf32_fdpic_loadseg entry.  A pointer to an
-+   elf32_fdpic_loadmap is passed in (r?) at start-up, and a pointer to
-+   an additional such map is passed in (r?) for the interpreter, when
-+   there is one.  */
-+
-+#include <elf.h>
-+
-+/* This data structure represents a PT_LOAD segment.  */
-+struct elf32_fdpic_loadseg
-+{
-+  /* Core address to which the segment is mapped.  */
-+  Elf32_Addr addr;
-+  /* VMA recorded in the program header.  */
-+  Elf32_Addr p_vaddr;
-+  /* Size of this segment in memory.  */
-+  Elf32_Word p_memsz;
-+};
-+
-+struct elf32_fdpic_loadmap {
-+  /* Protocol version number, must be zero.  */
-+  Elf32_Half version;
-+  /* Number of segments in this map.  */
-+  Elf32_Half nsegs;
-+  /* The actual memory map.  */
-+  struct elf32_fdpic_loadseg segs[/*nsegs*/];
-+};
-+
-+struct elf32_fdpic_loadaddr {
-+  struct elf32_fdpic_loadmap *map;
-+  void *got_value;
-+};
-+
-+/* Map a pointer's VMA to its corresponding address according to the
-+   load map.  */
-+static __always_inline void *
-+__reloc_pointer (void *p,
-+		 const struct elf32_fdpic_loadmap *map)
-+{
-+  int c;
-+
-+#if 0
-+  if (map->version != 0)
-+    /* Crash.  */
-+    ((void(*)())0)();
-+#endif
-+
-+  /* No special provision is made for NULL.  We don't want NULL
-+     addresses to go through relocation, so they shouldn't be in
-+     .rofixup sections, and, if they're present in dynamic
-+     relocations, they shall be mapped to the NULL address without
-+     undergoing relocations.  */
-+
-+  for (c = 0;
-+       /* Take advantage of the fact that the loadmap is ordered by
-+	  virtual addresses.  In general there will only be 2 entries,
-+	  so it's not profitable to do a binary search.  */
-+       c < map->nsegs && p >= (void*)map->segs[c].p_vaddr;
-+       c++)
-+    {
-+      /* This should be computed as part of the pointer comparison
-+	 above, but we want to use the carry in the comparison, so we
-+	 can't convert it to an integer type beforehand.  */
-+      unsigned long offset = p - (void*)map->segs[c].p_vaddr;
-+      /* We only check for one-past-the-end for the last segment,
-+	 assumed to be the data segment, because other cases are
-+	 ambiguous in the absence of padding between segments, and
-+	 rofixup already serves as padding between text and data.
-+	 Unfortunately, unless we special-case the last segment, we
-+	 fail to relocate the _end symbol.  */
-+      if (offset < map->segs[c].p_memsz
-+	  || (offset == map->segs[c].p_memsz && c + 1 == map->nsegs))
-+	return (char*)map->segs[c].addr + offset;
-+    }
-+
-+  /* We might want to crash instead.  */
-+  return (void*)-1;
-+}
-+
-+# define __RELOC_POINTER(ptr, loadaddr) \
-+  (__reloc_pointer ((void*)(ptr), \
-+		    (loadaddr).map))
-+
-+#endif /* _BITS_ELF_FDPIC_H */
 diff --git a/libc/sysdeps/linux/lm32/bits/endian.h b/libc/sysdeps/linux/lm32/bits/endian.h
 new file mode 100644
 index 0000000..0a6b529
@@ -1422,10 +1305,10 @@ index 0000000..93dc03c
 +        ret
 diff --git a/libc/sysdeps/linux/lm32/crtreloc.c b/libc/sysdeps/linux/lm32/crtreloc.c
 new file mode 100644
-index 0000000..3f6e39d
+index 0000000..ba934bc
 --- /dev/null
 +++ b/libc/sysdeps/linux/lm32/crtreloc.c
-@@ -0,0 +1,145 @@
+@@ -0,0 +1,120 @@
 +/* Copyright (C) 2003, 2004 Free Software Foundation, Inc.
 +   written by Alexandre Oliva <aoliva@redhat.com>
 +This file is part of the GNU C Library.
@@ -1454,18 +1337,11 @@ index 0000000..3f6e39d
 +not, write to the Free Software Foundation, Inc., 675 Mass Ave,
 +Cambridge, MA 02139, USA.  */
 +
-+#ifdef __LM32_FDPIC__
-+
 +#include <sys/types.h>
 +#include <link.h>
 +
 +/* This file is to be compiled into crt object files, to enable
 +   executables to easily self-relocate.  */
-+
-+union word {
-+    char c[4];
-+    void *v;
-+};
 +
 +/* Compute the runtime address of pointer in the range [p,e), and then
 +   map the pointer pointed by it.  */
@@ -1475,35 +1351,19 @@ index 0000000..3f6e39d
 +{
 +  while (p < e)
 +    {
-+      if (*p != (void **)-1)
++      void *ptr = __reloc_pointer (*p, map);
++      if (ptr)
 +	{
-+	  void *ptr = __reloc_pointer (*p, map);
-+	  if (ptr != (void *)-1)
-+	    {
-+	      void *pt;
-+	      if ((long)ptr & 3)
-+		{
-+		  unsigned char *c = ptr;
-+		  int i;
-+		  unsigned long v = 0;
-+		  for (i = 0; i < 4; i++)
-+		    v |= c[i] << 8 * i;
-+		  pt = (void *)v;
-+		}
-+	      else
-+		pt = *(void**)ptr;
-+	      pt = __reloc_pointer (pt, map);
-+	      if ((long)ptr & 3)
-+		{
-+		  unsigned char *c = ptr;
-+		  int i;
-+		  unsigned long v = (unsigned long)pt;
-+		  for (i = 0; i < 4; i++, v >>= 8)
-+		    c[i] = v;
-+		}
-+	      else
-+		*(void**)ptr = pt;
-+	    }
++	  void *pt;
++	  if ((long)ptr & 3)
++	    __builtin_memcpy(&pt, ptr, sizeof(pt));
++	  else
++	    pt = *(void**)ptr;
++	  pt = __reloc_pointer (pt, map);
++	  if ((long)ptr & 3)
++	    __builtin_memcpy(ptr, &pt, sizeof(pt));
++	  else
++	    *(void**)ptr = pt;
 +	}
 +      p++;
 +    }
@@ -1569,8 +1429,6 @@ index 0000000..3f6e39d
 +  return reloc_range_indirect (p, e, map);
 +}
 +#endif
-+
-+#endif /* __LM32_FDPIC__ */
 diff --git a/libc/sysdeps/linux/lm32/mmap.c b/libc/sysdeps/linux/lm32/mmap.c
 new file mode 100644
 index 0000000..ffec333
@@ -2232,10 +2090,10 @@ index 0000000..9d87370
 +libc_hidden_weak(vfork)
 diff --git a/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h b/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h
 new file mode 100644
-index 0000000..24b7975
+index 0000000..96161df
 --- /dev/null
 +++ b/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,63 @@
 +/* Machine-dependent pthreads configuration and inline functions.
 +   nios2 version.
 +   Copyright (C) 1996, 1998, 2000, 2002 Free Software Foundation, Inc.
@@ -2259,8 +2117,10 @@ index 0000000..24b7975
 +#ifndef _PT_MACHINE_H
 +#define _PT_MACHINE_H   1
 +
++#include <features.h>
++
 +#ifndef PT_EI
-+# define PT_EI extern inline
++# define PT_EI __extern_always_inline
 +#endif
 +
 +extern long int testandset (int* spinlock);
