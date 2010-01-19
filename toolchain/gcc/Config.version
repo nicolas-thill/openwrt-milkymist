@@ -58,6 +58,7 @@ if !TOOLCHAINOPTS
 
 if !LINUX_2_4
 	config GCC_VERSION_4_2_4
+		default y if lm32
 		default y if TARGET_avr32
 		default y if TARGET_ppc40x
 		default y if TARGET_ppc44x
@@ -72,7 +73,6 @@ if !LINUX_2_4
 		default y if arm || armeb
 
 	config GCC_VERSION_4_4_1
-		default y if lm32
 		default y if ubicom32
 		default y if TARGET_octeon
 endif
