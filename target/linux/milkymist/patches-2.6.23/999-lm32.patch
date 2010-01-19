@@ -297,14 +297,14 @@ index 0000000..5e5243a
 +	cat $< |gzip >$@
 diff --git a/arch/lm32/defconfig b/arch/lm32/defconfig
 new file mode 100644
-index 0000000..e01ea40
+index 0000000..a40784f
 --- /dev/null
 +++ b/arch/lm32/defconfig
-@@ -0,0 +1,646 @@
+@@ -0,0 +1,677 @@
 +#
 +# Automatically generated make config: don't edit
 +# Linux kernel version: 2.6.23
-+# Mon Dec 28 00:47:37 2009
++# Wed Jan 13 19:50:35 2010
 +#
 +CONFIG_LM32=y
 +# CONFIG_MMU is not set
@@ -443,7 +443,10 @@ index 0000000..e01ea40
 +# CONFIG_IP_MULTICAST is not set
 +# CONFIG_IP_ADVANCED_ROUTER is not set
 +CONFIG_IP_FIB_HASH=y
-+# CONFIG_IP_PNP is not set
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++# CONFIG_IP_PNP_BOOTP is not set
++# CONFIG_IP_PNP_RARP is not set
 +# CONFIG_NET_IPIP is not set
 +# CONFIG_NET_IPGRE is not set
 +# CONFIG_ARPD is not set
@@ -552,7 +555,10 @@ index 0000000..e01ea40
 +# CONFIG_MACVLAN is not set
 +# CONFIG_EQUALIZER is not set
 +# CONFIG_TUN is not set
-+# CONFIG_NET_ETHERNET is not set
++# CONFIG_PHYLIB is not set
++CONFIG_NET_ETHERNET=y
++# CONFIG_MII is not set
++CONFIG_OPEN_ETH=y
 +# CONFIG_NETDEV_1000 is not set
 +# CONFIG_NETDEV_10000 is not set
 +
@@ -594,10 +600,13 @@ index 0000000..e01ea40
 +#
 +# Userland interfaces
 +#
-+# CONFIG_INPUT_MOUSEDEV is not set
++CONFIG_INPUT_MOUSEDEV=y
++CONFIG_INPUT_MOUSEDEV_PSAUX=y
++CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
++CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
 +# CONFIG_INPUT_JOYDEV is not set
 +# CONFIG_INPUT_TSDEV is not set
-+# CONFIG_INPUT_EVDEV is not set
++CONFIG_INPUT_EVDEV=y
 +# CONFIG_INPUT_EVBUG is not set
 +
 +#
@@ -610,7 +619,16 @@ index 0000000..e01ea40
 +# CONFIG_KEYBOARD_XTKBD is not set
 +# CONFIG_KEYBOARD_NEWTON is not set
 +# CONFIG_KEYBOARD_STOWAWAY is not set
-+# CONFIG_INPUT_MOUSE is not set
++CONFIG_INPUT_MOUSE=y
++CONFIG_MOUSE_PS2=y
++CONFIG_MOUSE_PS2_ALPS=y
++CONFIG_MOUSE_PS2_LOGIPS2PP=y
++CONFIG_MOUSE_PS2_SYNAPTICS=y
++CONFIG_MOUSE_PS2_LIFEBOOK=y
++CONFIG_MOUSE_PS2_TRACKPOINT=y
++# CONFIG_MOUSE_PS2_TOUCHKIT is not set
++# CONFIG_MOUSE_SERIAL is not set
++# CONFIG_MOUSE_VSXXXAA is not set
 +# CONFIG_INPUT_JOYSTICK is not set
 +# CONFIG_INPUT_TABLET is not set
 +# CONFIG_INPUT_TOUCHSCREEN is not set
@@ -624,6 +642,7 @@ index 0000000..e01ea40
 +# CONFIG_SERIO_SERPORT is not set
 +CONFIG_SERIO_LIBPS2=y
 +CONFIG_SERIO_MILKBD=y
++CONFIG_SERIO_MILKMOUSE=y
 +# CONFIG_SERIO_RAW is not set
 +# CONFIG_GAMEPORT is not set
 +
@@ -830,8 +849,20 @@ index 0000000..e01ea40
 +#
 +# Network File Systems
 +#
-+# CONFIG_NFS_FS is not set
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3=y
++# CONFIG_NFS_V3_ACL is not set
++# CONFIG_NFS_V4 is not set
++# CONFIG_NFS_DIRECTIO is not set
 +# CONFIG_NFSD is not set
++CONFIG_ROOT_NFS=y
++CONFIG_LOCKD=y
++CONFIG_LOCKD_V4=y
++CONFIG_NFS_COMMON=y
++CONFIG_SUNRPC=y
++# CONFIG_SUNRPC_BIND34 is not set
++# CONFIG_RPCSEC_GSS_KRB5 is not set
++# CONFIG_RPCSEC_GSS_SPKM3 is not set
 +# CONFIG_SMB_FS is not set
 +# CONFIG_CIFS is not set
 +# CONFIG_NCP_FS is not set
@@ -2774,10 +2805,10 @@ index 0000000..33b497d
 +
 diff --git a/arch/lm32/kernel/process.c b/arch/lm32/kernel/process.c
 new file mode 100644
-index 0000000..ab30c13
+index 0000000..97a519c
 --- /dev/null
 +++ b/arch/lm32/kernel/process.c
-@@ -0,0 +1,317 @@
+@@ -0,0 +1,307 @@
 +/*
 + * (C) Copyright 2007
 + *     Theobroma Systems <www.theobroma-systems.com>
@@ -2869,24 +2900,14 @@ index 0000000..ab30c13
 +	}
 +}
 +
++#define MMPTR(x) (*((volatile unsigned int *)(x)))
++#define CSR_SYSTEM_ID MMPTR(0x8000103c)
++
 +void machine_restart(char * __unused)
 +{
-+	asm volatile(
-+		"wcsr IE, r0\n"
-+		"wcsr IM, r0\n"
-+		"wcsr EBA, r0\n"
-+		"rcsr r1, IP\n"
-+		"wcsr IP, r1\n"
-+		"nop\n"
-+		"nop\n"
-+#if defined(CONFIG_PLAT_MILKYMIST)
-+		"mvi r1, 0x100\n"
-+		"call r1\n"
-+#else
-+		"call r0\n"
-+#endif
-+		"nop\n"
-+	);
++	/* Writing to CSR_SYSTEM_ID causes a system reset */
++	CSR_SYSTEM_ID = 1;
++	while(1);
 +}
 +
 +void machine_halt(void)
@@ -6904,6 +6925,1187 @@ index 0000000..f155ad7
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Milkymist MTD Mapping driver");
 +MODULE_AUTHOR("Clark Xin, codinflu@gmail.com");
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index c551925..8e09b61 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -839,6 +839,14 @@ config ULTRA32
+ 	  <file:Documentation/networking/net-modules.txt>. The module
+ 	  will be called smc-ultra32.
+ 
++config OPEN_ETH
++	tristate "OpenCores Ethernet support"
++	default y
++	depends on NET_ETHERNET && PLAT_MILKYMIST
++	help
++	  This is the driver for ethmac from OpenCores, used as an early Ethernet
++	  controller in Milkymist with slight modifications.
++
+ config BFIN_MAC
+ 	tristate "Blackfin 536/537 on-chip mac support"
+ 	depends on NET_ETHERNET && (BF537 || BF536) && (!BF537_PORT_H)
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 9c928a8..d5152ae 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -203,6 +203,7 @@ obj-$(CONFIG_MYRI10GE) += myri10ge/
+ obj-$(CONFIG_SMC91X) += smc91x.o
+ obj-$(CONFIG_SMC911X) += smc911x.o
+ obj-$(CONFIG_BFIN_MAC) += bfin_mac.o
++obj-$(CONFIG_OPEN_ETH) += open_eth.o
+ obj-$(CONFIG_DM9000) += dm9000.o
+ obj-$(CONFIG_FEC_8XX) += fec_8xx/
+ obj-$(CONFIG_PASEMI_MAC) += pasemi_mac.o
+diff --git a/drivers/net/open_eth.c b/drivers/net/open_eth.c
+new file mode 100644
+index 0000000..a35ad57
+--- /dev/null
++++ b/drivers/net/open_eth.c
+@@ -0,0 +1,986 @@
++/*
++ * Ethernet driver for Open Ethernet Controller (www.opencores.org).
++ *      Copyright (c) 2002 Simon Srot (simons@opencores.org) and OpenCores.org
++ *
++ * Changes:
++ * 10. 02. 2004: Matjaz Breskvar (phoenix@bsemi.com)
++ *   port to linux-2.4, workaround for next tx bd number. 
++ *
++ * Based on:
++ *
++ * Ethernet driver for Motorola MPC8xx.
++ *      Copyright (c) 1997 Dan Malek (dmalek@jlc.net)
++ *
++ * mcen302.c: A Linux network driver for Mototrola 68EN302 MCU
++ *
++ *      Copyright (C) 1999 Aplio S.A. Written by Vadim Lebedev
++ *
++ * Rigt now XXBUFF_PREALLOC must be used, bacause MAC does not 
++ * handle unaligned buffers yet.  Also the cache inhibit calls
++ * should be used some day.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/string.h>
++#include <linux/ptrace.h>
++#include <linux/errno.h>
++#include <linux/ioport.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
++#include <linux/pci.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
++#include <linux/skbuff.h>
++#include <linux/spinlock.h>
++
++#include <asm/irq.h>
++#include <asm/pgtable.h>
++#include <asm/bitops.h>
++#include <asm/uaccess.h>
++
++#include "open_eth.h"
++
++//#define DEBUG 1
++#undef DEBUG
++#define _print printk
++
++#ifdef DEBUG
++#define D(x) x
++#else
++#define D(x)
++#endif
++
++#define RXBUFF_PREALLOC	1
++#define TXBUFF_PREALLOC	1
++//#undef RXBUFF_PREALLOC
++//#undef TXBUFF_PREALLOC
++
++/* The transmitter timeout
++ */
++#define TX_TIMEOUT	(2*HZ)
++
++/* Buffer number (must be 2^n) 
++ */
++#define OETH_RXBD_NUM		8
++#define OETH_TXBD_NUM		8
++#define OETH_RXBD_NUM_MASK	(OETH_RXBD_NUM-1)
++#define OETH_TXBD_NUM_MASK	(OETH_TXBD_NUM-1)
++
++/* Buffer size 
++ */
++#define OETH_RX_BUFF_SIZE	2048
++#define OETH_TX_BUFF_SIZE	2048
++
++/* How many buffers per page 
++ */
++#define OETH_RX_BUFF_PPGAE	(PAGE_SIZE/OETH_RX_BUFF_SIZE)
++#define OETH_TX_BUFF_PPGAE	(PAGE_SIZE/OETH_TX_BUFF_SIZE)
++
++/* How many pages is needed for buffers 
++ */
++#define OETH_RX_BUFF_PAGE_NUM	(OETH_RXBD_NUM/OETH_RX_BUFF_PPGAE)
++#define OETH_TX_BUFF_PAGE_NUM	(OETH_TXBD_NUM/OETH_TX_BUFF_PPGAE)
++
++/* Buffer size  (if not XXBUF_PREALLOC 
++ */
++#define MAX_FRAME_SIZE		1518
++
++/* The buffer descriptors track the ring buffers.   
++ */
++struct oeth_private {
++	struct	sk_buff* rx_skbuff[OETH_RXBD_NUM];
++	struct	sk_buff* tx_skbuff[OETH_TXBD_NUM];
++
++	ushort	tx_next;			/* Next buffer to be sent */
++	ushort	tx_last;			/* Next buffer to be checked if packet sent */
++	ushort	tx_full;			/* Buffer ring fuul indicator */
++	ushort	rx_cur;				/* Next buffer to be checked if packet received */
++
++	oeth_regs	*regs;			/* Address of controller registers. */
++	oeth_bd		*rx_bd_base;		/* Address of Rx BDs. */
++	oeth_bd		*tx_bd_base;		/* Address of Tx BDs. */
++
++	struct net_device_stats stats;
++};
++
++static int oeth_open(struct net_device *dev);
++static int oeth_start_xmit(struct sk_buff *skb, struct net_device *dev);
++static void oeth_rx(struct net_device *dev);
++static void oeth_tx(struct net_device *dev);
++static irqreturn_t oeth_interrupt(int irq, void *dev_id);
++static int oeth_close(struct net_device *dev);
++static struct net_device_stats *oeth_get_stats(struct net_device *dev);
++static void oeth_set_multicast_list(struct net_device *dev);
++static int oeth_set_mac_add(struct net_device *dev, void *addr);
++static int calc_crc(char *mac_addr);
++
++/* __PHX__ fixme for more ehternet drivers */
++#ifdef CONFIG_OETH_UNKNOWN_TX_NEXT
++static int tx_next = -1;
++#endif
++
++
++#ifdef DEBUG
++static void
++oeth_print_packet(unsigned long add, int len)
++{
++	int i;
++
++	_print("ipacket: add = %lx len = %d\n", add, len);
++	for(i = 0; i < len; i++) {
++  		if(!(i % 16))
++    			_print("\n");
++  		_print(" %.2x", *(((unsigned char *)add) + i));
++	}
++	_print("\n");
++}
++#endif
++
++static int
++oeth_open(struct net_device *dev)
++{
++#ifdef CONFIG_OETH_UNKNOWN_TX_NEXT
++	struct oeth_private *cep = (struct oeth_private *)dev->priv;
++#endif
++
++	oeth_regs *regs = (oeth_regs *)dev->base_addr;
++	D(printk("OPEN: net_device %p\n", dev));
++
++#ifdef CONFIG_OETH_UNKNOWN_TX_NEXT
++	if (tx_next != -1) {
++		cep->tx_next = tx_next;
++	}
++#endif
++
++
++#ifndef RXBUFF_PREALLOC
++	struct oeth_private *cep = (struct oeth_private *)dev->priv;
++	struct  sk_buff *skb;
++	volatile oeth_bd *rx_bd;
++	int i;
++
++	rx_bd = cep->rx_bd_base;
++
++	for(i = 0; i < OETH_RXBD_NUM; i++) {
++
++		skb = dev_alloc_skb(MAX_FRAME_SIZE);
++
++		if (skb == NULL)
++			rx_bd[i].len_status = (0 << 16) | OETH_RX_BD_IRQ;
++		else
++			rx_bd[i].len_status = (0 << 16) | OETH_RX_BD_EMPTY | OETH_RX_BD_IRQ;
++
++		cep->rx_skbuff[i] = skb;
++
++		rx_bd[i].addr = (unsigned long)skb->tail;
++	}
++	rx_bd[OETH_RXBD_NUM - 1].len_status |= OETH_RX_BD_WRAP;
++#endif
++
++	/* Install our interrupt handler.
++	 */
++	if(request_irq(IRQ_ETH_0, oeth_interrupt, 0, "eth", (void *)dev)) {
++		printk(KERN_NOTICE "Unable to attach OETH interrupt\n");
++#ifndef RXBUFF_PREALLOC
++		{
++			int i;
++
++			/* Free all alocated rx buffers 
++			*/
++			for (i = 0; i < OETH_RXBD_NUM; i++) {
++				
++				if (cep->rx_skbuff[i] != NULL)
++					dev_kfree_skb(cep->rx_skbuff[i]);
++				
++			}
++		}
++#endif
++#ifndef TXBUFF_PREALLOC
++		{
++			int i;
++			/* Free all alocated tx buffers 
++			*/
++			for (i = 0; i < OETH_TXBD_NUM; i++) {
++				
++				if (cep->tx_skbuff[i] != NULL)
++					dev_kfree_skb(cep->tx_skbuff[i]);
++			}
++		}
++#endif
++		return -EBUSY;
++	}
++
++	/* Enable receiver and transmiter 
++	 */
++	regs->moder |= OETH_MODER_RXEN | OETH_MODER_TXEN;
++
++	return 0;
++}
++
++static int
++oeth_close(struct net_device *dev)
++{
++#ifdef CONFIG_OETH_UNKNOWN_TX_NEXT
++	struct oeth_private *cep = (struct oeth_private *)dev->priv;
++#endif
++	oeth_regs *regs = (oeth_regs *)dev->base_addr;
++
++	D(printk("CLOSE: net_device %p\n", dev));
++
++	/* Free interrupt hadler 
++	 */
++	free_irq(IRQ_ETH_0, (void *)dev);
++
++	/* Disable receiver and transmitesr 
++	 */
++	regs->moder &= ~(OETH_MODER_RXEN | OETH_MODER_TXEN);	
++
++#ifndef RXBUFF_PREALLOC
++	{
++		int i;
++
++		/* Free all alocated rx buffers 
++		 */
++		for (i = 0; i < OETH_RXBD_NUM; i++) {
++			
++			if (cep->rx_skbuff[i] != NULL)
++				dev_kfree_skb(cep->rx_skbuff[i]);
++			
++		}
++	}
++#endif
++#ifndef TXBUFF_PREALLOC
++	{
++		int i;
++		/* Free all alocated tx buffers 
++		 */
++		for (i = 0; i < OETH_TXBD_NUM; i++) {
++			
++			if (cep->tx_skbuff[i] != NULL)
++				dev_kfree_skb(cep->tx_skbuff[i]);
++		}
++	}
++#endif
++
++#ifdef CONFIG_OETH_UNKNOWN_TX_NEXT
++	tx_next = cep->tx_next;
++#endif
++
++	return 0;
++}
++
++static int
++oeth_start_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	struct oeth_private *cep = (struct oeth_private *)dev->priv;
++	volatile oeth_bd *bdp;
++	unsigned long flags;
++
++	D(printk("X"));
++
++	/* Fill in a Tx ring entry 
++	 */
++	bdp = cep->tx_bd_base + cep->tx_next;
++
++	if (cep->tx_full) {
++
++		/* All transmit buffers are full.  Bail out.
++		 */
++		printk("%s: tx queue full!.\n", dev->name);
++		return 1;
++	}
++
++	/* Clear all of the status flags.
++	 */
++	bdp->len_status &= ~OETH_TX_BD_STATS;
++
++	/* If the frame is short, tell CPM to pad it.
++	 */
++	if (skb->len <= ETH_ZLEN)
++		bdp->len_status |= OETH_TX_BD_PAD;
++	else
++		bdp->len_status &= ~OETH_TX_BD_PAD;
++
++#ifdef DEBUG
++	_print("TX\n");
++	oeth_print_packet((unsigned long)skb->data, skb->len);
++#endif
++
++#ifdef TXBUFF_PREALLOC
++
++	/* Copy data in preallocated buffer */
++	if (skb->len > OETH_TX_BUFF_SIZE) {
++		printk("%s: tx frame too long!.\n", dev->name);
++		return 1;
++	}
++	else
++		memcpy((unsigned char *)__va(bdp->addr), skb->data, skb->len);
++
++	bdp->len_status = (bdp->len_status & 0x0000ffff) | (skb->len << 16);
++
++	dev_kfree_skb(skb);
++#else
++	/* Set buffer length and buffer pointer.
++	 */
++	bdp->len_status = (bdp->len_status & 0x0000ffff) | (skb->len << 16);
++	bdp->addr = (uint)__pa(skb->data);
++
++	/* Save skb pointer.
++	 */
++	cep->tx_skbuff[cep->tx_next] = skb;
++#endif
++
++	cep->tx_next = (cep->tx_next + 1) & OETH_TXBD_NUM_MASK;
++	
++	local_irq_save(flags);
++
++	if (cep->tx_next == cep->tx_last)
++		cep->tx_full = 1;
++
++	/* Send it on its way.  Tell controller its ready, interrupt when done,
++	 * and to put the CRC on the end.
++	 */
++	bdp->len_status |= (OETH_TX_BD_READY | OETH_TX_BD_IRQ | OETH_TX_BD_CRC);
++	
++	dev->trans_start = jiffies;
++
++	local_irq_restore(flags);
++
++	return 0;
++}
++
++/* The interrupt handler.
++ */
++static irqreturn_t
++oeth_interrupt(int irq, void *dev_id)
++{
++	struct	net_device *dev = dev_id;
++	volatile struct	oeth_private *cep;
++	uint	int_events;
++	int serviced;
++	
++	serviced = 0;
++
++#ifdef DEBUG
++	printk(".");
++	
++	printk("\n=tx_ | %x | %x | %x | %x | %x | %x | %x | %x\n",
++	       ((oeth_bd *)(OETH_BD_BASE))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+8))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+16))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+24))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+32))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+40))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+48))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+56))->len_status);
++	
++	printk("=rx_ | %x | %x | %x | %x | %x | %x | %x | %x\n",
++	       ((oeth_bd *)(OETH_BD_BASE+64))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+64+8))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+64+16))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+64+24))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+64+32))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+64+40))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+64+48))->len_status,
++	       ((oeth_bd *)(OETH_BD_BASE+64+56))->len_status);
++#endif
++	
++	cep = (struct oeth_private *)dev->priv;
++
++	/* Get the interrupt events that caused us to be here.
++	 */
++	int_events = cep->regs->int_src;
++	cep->regs->int_src = int_events;
++
++	/* Handle receive event in its own function.
++	 */
++	if (int_events & (OETH_INT_RXF | OETH_INT_RXE)) {
++		D(serviced |= 0x1); 
++		oeth_rx(dev_id);
++	}
++
++	/* Handle transmit event in its own function.
++	 */
++	if (int_events & (OETH_INT_TXB | OETH_INT_TXE)) {
++		D(serviced |= 0x2);
++
++		oeth_tx(dev_id);
++		if (netif_queue_stopped(dev)) {
++			D(printk("n"));
++			netif_wake_queue(dev);
++		}
++	}
++
++	/* Check for receive busy, i.e. packets coming but no place to
++	 * put them. 
++	 */
++	if (int_events & OETH_INT_BUSY) {
++		D(serviced |= 0x4);
++		D(printk("b"));
++		if (!(int_events & (OETH_INT_RXF | OETH_INT_RXE)))
++			oeth_rx(dev_id);
++	}
++
++
++#if 0
++	if (serviced == 0) {
++		void die(const char * str, struct pt_regs * regs, long err);
++		int show_stack(unsigned long *esp);
++		printk("!");
++//		printk("unserviced irq\n");
++//		show_stack(NULL);
++//		die("unserviced irq\n", regs, 801);
++	}
++#endif
++
++#ifdef DEBUG
++	if (serviced == 0)
++		printk("\nnot serviced: events 0x%x, irq %d, dev %p\n",
++		       int_events, irq, dev_id);
++	else 
++		printk(" | serviced 0x%x, events 0x%x, irq %d, dev %p\n",
++		       serviced, int_events, irq, dev_id);
++#endif
++
++	return IRQ_HANDLED;
++}
++
++
++static void
++oeth_tx(struct net_device *dev)
++{
++	struct	oeth_private *cep;
++	volatile oeth_bd *bdp;
++
++#ifndef TXBUFF_PREALLOC
++	struct	sk_buff *skb;
++#endif
++	D(printk("T"));
++
++	cep = (struct oeth_private *)dev->priv;
++
++	for (;; cep->tx_last = (cep->tx_last + 1) & OETH_TXBD_NUM_MASK) {
++
++		bdp = cep->tx_bd_base + cep->tx_last;
++
++		if ((bdp->len_status & OETH_TX_BD_READY) || 
++			((cep->tx_last == cep->tx_next) && !cep->tx_full))
++			break;
++
++		/* Check status for errors
++		 */
++		if (bdp->len_status & OETH_TX_BD_LATECOL)
++			cep->stats.tx_window_errors++;
++		if (bdp->len_status & OETH_TX_BD_RETLIM)
++			cep->stats.tx_aborted_errors++;
++		if (bdp->len_status & OETH_TX_BD_UNDERRUN)
++			cep->stats.tx_fifo_errors++;
++		if (bdp->len_status & OETH_TX_BD_CARRIER)
++			cep->stats.tx_carrier_errors++;
++		if (bdp->len_status & (OETH_TX_BD_LATECOL | OETH_TX_BD_RETLIM | OETH_TX_BD_UNDERRUN))
++			cep->stats.tx_errors++;
++
++		cep->stats.tx_packets++;
++		cep->stats.collisions += (bdp->len_status >> 4) & 0x000f;
++
++#ifndef TXBUFF_PREALLOC
++		skb = cep->tx_skbuff[cep->tx_last];
++
++		/* Free the sk buffer associated with this last transmit.
++		*/
++		dev_kfree_skb(skb);
++#endif
++
++		if (cep->tx_full)
++			cep->tx_full = 0;
++	}
++}
++
++static void
++oeth_rx(struct net_device *dev)
++{
++	struct	oeth_private *cep;
++	volatile oeth_bd *bdp;
++	struct	sk_buff *skb;
++	int	pkt_len;
++	int	bad = 0;
++#ifndef RXBUFF_PREALLOC
++	struct	sk_buff *small_skb;
++#endif
++
++	asm volatile( /* Invalidate Level-1 data cache */
++		"wcsr DCC, r0\n"
++		"nop\n"
++	);
++
++	D(printk("r"));
++
++	cep = (struct oeth_private *)dev->priv;
++
++	/* First, grab all of the stats for the incoming packet.
++	 * These get messed up if we get called due to a busy condition.
++	 */
++	for (;;cep->rx_cur = (cep->rx_cur + 1) & OETH_RXBD_NUM_MASK) {
++
++		bdp = cep->rx_bd_base + cep->rx_cur;
++
++#ifndef RXBUFF_PREALLOC
++		skb = cep->rx_skbuff[cep->rx_cur];
++
++		if (skb == NULL) {
++
++			skb = dev_alloc_skb(MAX_FRAME_SIZE + 2);
++
++			if (skb != NULL)
++			{
++				bdp->addr = (unsigned long) skb->tail;
++				bdp->len_status |= OETH_RX_BD_EMPTY;
++			}
++			skb_reserve(skb, 2);
++
++			continue;
++		}
++#endif
++			
++		if (bdp->len_status & OETH_RX_BD_EMPTY)
++			break;
++			
++		/* Check status for errors.
++		 */
++		if (bdp->len_status & (OETH_RX_BD_TOOLONG | OETH_RX_BD_SHORT)) {
++			cep->stats.rx_length_errors++;
++			bad = 1;
++		}
++		if (bdp->len_status & OETH_RX_BD_DRIBBLE) {
++			cep->stats.rx_frame_errors++;
++			bad = 1;
++		}
++		if (bdp->len_status & OETH_RX_BD_CRCERR) {
++			cep->stats.rx_crc_errors++;
++			bad = 1;
++		}
++		if (bdp->len_status & OETH_RX_BD_OVERRUN) {
++			cep->stats.rx_crc_errors++;
++			bad = 1;
++		}
++		if (bdp->len_status & OETH_RX_BD_MISS) {
++
++		}
++		if (bdp->len_status & OETH_RX_BD_LATECOL) {
++			cep->stats.rx_frame_errors++;
++			bad = 1;
++		}
++		
++		
++		if (bad) {
++			bdp->len_status &= ~OETH_RX_BD_STATS;
++			bdp->len_status |= OETH_RX_BD_EMPTY;
++
++			continue;
++		}
++
++		/* Process the incoming frame.
++		 */
++		pkt_len = bdp->len_status >> 16;
++        
++#ifdef RXBUFF_PREALLOC
++		skb = dev_alloc_skb(pkt_len + 2);
++        
++		if (skb == NULL) {
++			printk("%s: Memory squeeze, dropping packet.\n", dev->name);
++			cep->stats.rx_dropped++;
++		}
++		else {
++			skb_reserve(skb, 2); /* longword align L3 header */
++			skb->dev = dev;
++#ifdef DEBUG
++			_print("RX\n");
++			oeth_print_packet((unsigned long)__va(bdp->addr), pkt_len);
++#endif
++			memcpy(skb_put(skb, pkt_len), (unsigned char *)__va(bdp->addr), pkt_len);
++			skb->protocol = eth_type_trans(skb,dev);
++			netif_rx(skb);
++			cep->stats.rx_packets++;
++		}
++
++		bdp->len_status &= ~OETH_RX_BD_STATS;
++		bdp->len_status |= OETH_RX_BD_EMPTY;
++#else
++
++		if (pkt_len < 128) {
++
++			small_skb = dev_alloc_skb(pkt_len);
++
++			if (small_skb) {
++				small_skb->dev = dev;
++#if DEBUG
++				_print("RX short\n");
++                                oeth_print_packet(__va(bdp->addr), bdp->len_status >> 16);
++#endif
++                                memcpy(skb_put(small_skb, pkt_len), (unsigned char *)__va(bdp->addr), pkt_len);
++                                small_skb->protocol = eth_type_trans(small_skb,dev);
++                                netif_rx(small_skb);
++				cep->stats.rx_packets++;
++			}
++			else {
++				printk("%s: Memory squeeze, dropping packet.\n", dev->name);
++	                        cep->stats.rx_dropped++;
++			}
++
++			bdp->len_status &= ~OETH_RX_BD_STATS;
++			bdp->len_status |= OETH_RX_BD_EMPTY;
++		}
++		else {
++        		skb->dev = dev;
++			skb_put(skb, bdp->len_status >> 16);
++			skb->protocol = eth_type_trans(skb,dev);
++			netif_rx(skb);
++			cep->stats.rx_packets++;
++#if DEBUG
++			_print("RX long\n");
++                        oeth_print_packet(__va(bdp->addr), bdp->len_status >> 16);
++#endif
++		
++			skb = dev_alloc_skb(MAX_FRAME_SIZE);
++
++			bdp->len_status &= ~OETH_RX_BD_STATS;
++        
++			if (skb) {
++				cep->rx_skbuff[cep->rx_cur] = skb;
++
++				bdp->addr = (unsigned long)skb->tail;
++				bdp->len_status |= OETH_RX_BD_EMPTY;
++			}
++			else {
++				cep->rx_skbuff[cep->rx_cur] = NULL;	
++			}
++		}
++#endif
++	}
++}
++
++static int calc_crc(char *mac_addr)
++{
++	int result = 0;
++	return (result & 0x3f);
++}
++
++static struct net_device_stats *oeth_get_stats(struct net_device *dev)
++{
++        struct oeth_private *cep = (struct oeth_private *)dev->priv;
++ 
++        return &cep->stats;
++}
++
++static void oeth_set_multicast_list(struct net_device *dev)
++{
++	struct	oeth_private *cep;
++	struct	dev_mc_list *dmi;
++	volatile oeth_regs *regs;
++	int	i;
++
++	cep = (struct oeth_private *)dev->priv;
++
++	/* Get pointer of controller registers.
++	 */
++	regs = (oeth_regs *)dev->base_addr;
++
++	if (dev->flags & IFF_PROMISC) {
++	  
++		/* Log any net taps. 
++		 */
++		printk("%s: Promiscuous mode enabled.\n", dev->name);
++		regs->moder |= OETH_MODER_PRO;
++	} else {
++
++		regs->moder &= ~OETH_MODER_PRO;
++
++		if (dev->flags & IFF_ALLMULTI) {
++
++			/* Catch all multicast addresses, so set the
++			 * filter to all 1's.
++			 */
++			regs->hash_addr0 = 0xffffffff;
++			regs->hash_addr1 = 0xffffffff;
++		}
++		else if (dev->mc_count) {
++
++			/* Clear filter and add the addresses in the list.
++			 */
++			regs->hash_addr0 = 0x00000000;
++			regs->hash_addr0 = 0x00000000;
++
++			dmi = dev->mc_list;
++
++			for (i = 0; i < dev->mc_count; i++) {
++				
++				int hash_b;
++
++				/* Only support group multicast for now.
++				 */
++				if (!(dmi->dmi_addr[0] & 1))
++					continue;
++
++				hash_b = calc_crc(dmi->dmi_addr); 
++				if(hash_b >= 32)
++					regs->hash_addr1 |= 1 << (hash_b - 32);
++				else
++					regs->hash_addr0 |= 1 << hash_b;
++			}
++		}
++	}
++}
++
++static int oeth_set_mac_add(struct net_device *dev, void *p)
++{
++	struct sockaddr *addr=p;
++	volatile oeth_regs *regs;
++
++	memcpy(dev->dev_addr, addr->sa_data,dev->addr_len);
++
++	regs = (oeth_regs *)dev->base_addr;
++
++	regs->mac_addr1 = 	addr->sa_data[0] << 8 	| 
++				addr->sa_data[1];
++        regs->mac_addr0 = 	addr->sa_data[2] << 24 	| 
++				addr->sa_data[3] << 16 	| 
++				addr->sa_data[4] << 8 	| 
++				addr->sa_data[5];	
++
++	return 0;
++}
++
++/* Initialize the Open Ethernet MAC.
++ */
++int __init oeth_init(void)
++{
++	struct net_device *dev;
++	struct oeth_private *cep;
++	volatile oeth_regs *regs;
++	volatile oeth_bd *tx_bd, *rx_bd;
++	int error, i, j, k;
++#ifdef SRAM_BUFF
++	unsigned long mem_addr = SRAM_BUFF_BASE;
++#else
++	unsigned long mem_addr;
++#endif
++
++	/* Create an Ethernet device instance.
++         */
++	dev = alloc_etherdev(sizeof(*cep));
++	if (!dev)
++		return -ENOMEM;
++	
++	cep = dev->priv;
++//	spin_lock_init(&cep->lock);
++
++	/* Get pointer ethernet controller configuration registers.
++	 */
++	cep->regs = (oeth_regs *)(OETH_REG_BASE);
++	regs = (oeth_regs *)(OETH_REG_BASE);
++
++	/* Reset the controller.
++	 */
++	regs->moder = OETH_MODER_RST;	/* Reset ON */
++	regs->moder &= ~OETH_MODER_RST;	/* Reset OFF */
++
++	/* Setting TXBD base to OETH_TXBD_NUM.
++	 */
++	regs->tx_bd_num = OETH_TXBD_NUM;
++	
++	/* Initialize TXBD pointer
++	 */
++	cep->tx_bd_base = (oeth_bd *)OETH_BD_BASE;
++	tx_bd = (volatile oeth_bd *)OETH_BD_BASE;
++
++	/* Initialize RXBD pointer
++	 */
++	cep->rx_bd_base = ((oeth_bd *)OETH_BD_BASE) + OETH_TXBD_NUM;
++	rx_bd = ((volatile oeth_bd *)OETH_BD_BASE) + OETH_TXBD_NUM;
++
++	/* Initialize transmit pointers.
++	 */
++	cep->rx_cur = 0;
++
++	/* workaround */
++#ifdef CONFIG_OETH_UNKNOWN_TX_NEXT
++	/* the first time use value passed by bootloader
++	 * __PHX__ fixme, this woun't work if you have this compiled as module
++	 */
++	{
++		int tmp_next = *((int *)(0xc0000000));
++		
++		/* sanity check */
++		if ((tmp_next >= 0) && (tmp_next < OETH_TXBD_NUM))
++			cep->tx_next = tmp_next;
++		else {
++			printk(KERN_WARNING "open_eth: illegal number of TX buffer descriptors passed (%d), using default (if you did not use ethernet before starting linux this is ok)\n",
++			       tmp_next);
++			cep->tx_next = 0;
++		}
++	}
++#else
++	/* or read it from eth register, or set it to 0 in eth */
++	cep->tx_next = 0;
++#endif
++	cep->tx_last = 0;
++	cep->tx_full = 0;
++
++	/* Set min/max packet length 
++	 */
++	regs->packet_len = 0x00400600;
++
++	/* Set IPGT register to recomended value 
++	 */
++	regs->ipgt = 0x00000012;
++
++	/* Set IPGR1 register to recomended value 
++	 */
++	regs->ipgr1 = 0x0000000c;
++
++	/* Set IPGR2 register to recomended value 
++	 */
++	regs->ipgr2 = 0x00000012;
++
++	/* Set COLLCONF register to recomended value 
++	 */
++	regs->collconf = 0x000f003f;
++
++	/* Set control module mode 
++	 */
++#if 0
++	regs->ctrlmoder = OETH_CTRLMODER_TXFLOW | OETH_CTRLMODER_RXFLOW;
++#else
++	regs->ctrlmoder = 0;
++#endif
++
++  /* Set PHY to show Tx status, Rx status and Link status */
++  regs->miiaddress = 20<<8;
++  regs->miitx_data = 0x1422;
++  regs->miicommand = OETH_MIICOMMAND_WCTRLDATA;
++   
++#ifdef TXBUFF_PREALLOC
++
++	/* Initialize TXBDs.
++	 */
++	for(i = 0, k = 0; i < OETH_TX_BUFF_PAGE_NUM; i++) {
++
++#ifndef SRAM_BUFF
++		mem_addr = __get_free_page(GFP_KERNEL);
++#endif
++
++		for(j = 0; j < OETH_TX_BUFF_PPGAE; j++, k++) {
++			tx_bd[k].len_status = OETH_TX_BD_PAD | OETH_TX_BD_CRC | OETH_RX_BD_IRQ;
++			tx_bd[k].addr = __pa(mem_addr);
++			mem_addr += OETH_TX_BUFF_SIZE;
++		}
++	}
++	tx_bd[OETH_TXBD_NUM - 1].len_status |= OETH_TX_BD_WRAP;
++#else
++
++ 	/* Initialize TXBDs.
++	 */
++	for(i = 0; i < OETH_TXBD_NUM; i++) {
++
++		cep->tx_skbuff[i] = NULL;
++
++		tx_bd[i].len_status = (0 << 16) | OETH_TX_BD_PAD | OETH_TX_BD_CRC | OETH_RX_BD_IRQ;
++		tx_bd[i].addr = 0;
++	}
++	tx_bd[OETH_TXBD_NUM - 1].len_status |= OETH_TX_BD_WRAP;
++#endif
++
++#ifdef RXBUFF_PREALLOC
++
++	/* Initialize RXBDs.
++	 */
++	for(i = 0, k = 0; i < OETH_RX_BUFF_PAGE_NUM; i++) {
++
++#ifndef SRAM_BUFF
++		mem_addr = __get_free_page(GFP_KERNEL);
++#endif
++
++		for(j = 0; j < OETH_RX_BUFF_PPGAE; j++, k++) {
++			rx_bd[k].len_status = OETH_RX_BD_EMPTY | OETH_RX_BD_IRQ;
++			rx_bd[k].addr = __pa(mem_addr);
++			mem_addr += OETH_RX_BUFF_SIZE;
++		}
++	}
++	rx_bd[OETH_RXBD_NUM - 1].len_status |= OETH_RX_BD_WRAP;
++
++#else
++	/* Initialize RXBDs.
++	 */
++	for(i = 0; i < OETH_RXBD_NUM; i++) {
++
++
++		rx_bd[i].len_status = (0 << 16) | OETH_RX_BD_IRQ;
++
++		cep->rx_skbuff[i] = NULL;
++
++		rx_bd[i].addr = 0;
++	}
++	rx_bd[OETH_RXBD_NUM - 1].len_status |= OETH_RX_BD_WRAP;
++
++#endif
++
++	/* Set default ethernet station address.
++	 */
++	dev->dev_addr[0] = MACADDR0;
++	dev->dev_addr[1] = MACADDR1;
++	dev->dev_addr[2] = MACADDR2;
++	dev->dev_addr[3] = MACADDR3;
++	dev->dev_addr[4] = MACADDR4;
++	dev->dev_addr[5] = MACADDR5;
++
++	regs->mac_addr1 = MACADDR0 << 8 | MACADDR1;
++	regs->mac_addr0 = MACADDR2 << 24 | MACADDR3 << 16 | MACADDR4 << 8 | MACADDR5;
++	
++	/* Clear all pending interrupts 
++	 */
++	regs->int_src = 0xffffffff;
++
++	/* Promisc, IFG, CRCEn
++	 */
++	regs->moder |= OETH_MODER_PAD | OETH_MODER_IFG | OETH_MODER_CRCEN;
++
++	/* Enable interrupt sources.
++	 */
++	regs->int_mask = OETH_INT_MASK_TXB 	| 
++		OETH_INT_MASK_TXE 	| 
++		OETH_INT_MASK_RXF 	| 
++		OETH_INT_MASK_RXE 	|
++		OETH_INT_MASK_BUSY 	|
++		OETH_INT_MASK_TXC	|
++		OETH_INT_MASK_RXC;
++
++	/* Fill in the fields of the device structure with ethernet values. 
++	 */
++	ether_setup(dev);
++
++	dev->base_addr = (unsigned long)OETH_REG_BASE;
++
++	/* The Open Ethernet specific entries in the device structure. 
++	 */
++	dev->open = oeth_open;
++	dev->hard_start_xmit = oeth_start_xmit;
++	dev->stop = oeth_close;
++	dev->get_stats = oeth_get_stats;
++	dev->set_multicast_list = oeth_set_multicast_list;
++	dev->set_mac_address = oeth_set_mac_add;
++
++	if ((error = register_netdev(dev))) {
++		free_netdev(dev);
++		return error;
++	}
++
++	printk("%s: Open Ethernet Core Version 1.0\n", dev->name);
++
++	return 0;
++}
++
++module_init(oeth_init);
+diff --git a/drivers/net/open_eth.h b/drivers/net/open_eth.h
+new file mode 100644
+index 0000000..b78b96a
+--- /dev/null
++++ b/drivers/net/open_eth.h
+@@ -0,0 +1,152 @@
++
++/* Ethernet configuration registers */
++typedef struct _oeth_regs {
++        uint    moder;          /* Mode Register */
++        uint    int_src;        /* Interrupt Source Register */
++        uint    int_mask;       /* Interrupt Mask Register */
++        uint    ipgt;           /* Back to Bak Inter Packet Gap Register */
++        uint    ipgr1;          /* Non Back to Back Inter Packet Gap Register 1 */
++        uint    ipgr2;          /* Non Back to Back Inter Packet Gap Register 2 */
++        uint    packet_len;     /* Packet Length Register (min. and max.) */
++        uint    collconf;       /* Collision and Retry Configuration Register */
++        uint    tx_bd_num;      /* Transmit Buffer Descriptor Number Register */
++        uint    ctrlmoder;      /* Control Module Mode Register */
++        uint    miimoder;       /* MII Mode Register */
++        uint    miicommand;     /* MII Command Register */
++        uint    miiaddress;     /* MII Address Register */
++        uint    miitx_data;     /* MII Transmit Data Register */
++        uint    miirx_data;     /* MII Receive Data Register */
++        uint    miistatus;      /* MII Status Register */
++        uint    mac_addr0;      /* MAC Individual Address Register 0 */
++        uint    mac_addr1;      /* MAC Individual Address Register 1 */
++        uint    hash_addr0;     /* Hash Register 0 */
++        uint    hash_addr1;     /* Hash Register 1 */                           
++} oeth_regs;
++
++/* Ethernet buffer descriptor */
++typedef struct _oeth_bd {
++#if 0
++        ushort  len;            /* Buffer length */
++        ushort  status;         /* Buffer status */
++#else
++        uint    len_status;
++#endif
++        uint    addr;           /* Buffer address */
++} oeth_bd;
++
++#define OETH_REG_BASE           0xc0000000
++#define OETH_BD_BASE            0xc0000400
++#define OETH_TOTAL_BD           128
++#define OETH_MAXBUF_LEN         0x600
++                                
++/* Tx BD */                     
++#define OETH_TX_BD_READY        0x8000 /* Tx BD Ready */
++#define OETH_TX_BD_IRQ          0x4000 /* Tx BD IRQ Enable */
++#define OETH_TX_BD_WRAP         0x2000 /* Tx BD Wrap (last BD) */
++#define OETH_TX_BD_PAD          0x1000 /* Tx BD Pad Enable */
++#define OETH_TX_BD_CRC          0x0800 /* Tx BD CRC Enable */
++                                
++#define OETH_TX_BD_UNDERRUN     0x0100 /* Tx BD Underrun Status */
++#define OETH_TX_BD_RETRY        0x00F0 /* Tx BD Retry Status */
++#define OETH_TX_BD_RETLIM       0x0008 /* Tx BD Retransmission Limit Status */
++#define OETH_TX_BD_LATECOL      0x0004 /* Tx BD Late Collision Status */
++#define OETH_TX_BD_DEFER        0x0002 /* Tx BD Defer Status */
++#define OETH_TX_BD_CARRIER      0x0001 /* Tx BD Carrier Sense Lost Status */
++#define OETH_TX_BD_STATS        (OETH_TX_BD_UNDERRUN            | \
++                                OETH_TX_BD_RETRY                | \
++                                OETH_TX_BD_RETLIM               | \
++                                OETH_TX_BD_LATECOL              | \
++                                OETH_TX_BD_DEFER                | \
++                                OETH_TX_BD_CARRIER)
++                                
++/* Rx BD */                     
++#define OETH_RX_BD_EMPTY        0x8000 /* Rx BD Empty */
++#define OETH_RX_BD_IRQ          0x4000 /* Rx BD IRQ Enable */
++#define OETH_RX_BD_WRAP         0x2000 /* Rx BD Wrap (last BD) */
++                                
++#define OETH_RX_BD_MISS         0x0080 /* Rx BD Miss Status */
++#define OETH_RX_BD_OVERRUN      0x0040 /* Rx BD Overrun Status */
++#define OETH_RX_BD_INVSIMB      0x0020 /* Rx BD Invalid Symbol Status */
++#define OETH_RX_BD_DRIBBLE      0x0010 /* Rx BD Dribble Nibble Status */
++#define OETH_RX_BD_TOOLONG      0x0008 /* Rx BD Too Long Status */
++#define OETH_RX_BD_SHORT        0x0004 /* Rx BD Too Short Frame Status */
++#define OETH_RX_BD_CRCERR       0x0002 /* Rx BD CRC Error Status */
++#define OETH_RX_BD_LATECOL      0x0001 /* Rx BD Late Collision Status */
++#define OETH_RX_BD_STATS        (OETH_RX_BD_MISS                | \
++                                OETH_RX_BD_OVERRUN              | \
++                                OETH_RX_BD_INVSIMB              | \
++                                OETH_RX_BD_DRIBBLE              | \
++                                OETH_RX_BD_TOOLONG              | \
++                                OETH_RX_BD_SHORT                | \
++                                OETH_RX_BD_CRCERR               | \
++                                OETH_RX_BD_LATECOL)
++
++/* MODER Register */
++#define OETH_MODER_RXEN         0x00000001 /* Receive Enable  */
++#define OETH_MODER_TXEN         0x00000002 /* Transmit Enable */
++#define OETH_MODER_NOPRE        0x00000004 /* No Preamble  */
++#define OETH_MODER_BRO          0x00000008 /* Reject Broadcast */
++#define OETH_MODER_IAM          0x00000010 /* Use Individual Hash */
++#define OETH_MODER_PRO          0x00000020 /* Promiscuous (receive all) */
++#define OETH_MODER_IFG          0x00000040 /* Min. IFG not required */
++#define OETH_MODER_LOOPBCK      0x00000080 /* Loop Back */
++#define OETH_MODER_NOBCKOF      0x00000100 /* No Backoff */
++#define OETH_MODER_EXDFREN      0x00000200 /* Excess Defer */
++#define OETH_MODER_FULLD        0x00000400 /* Full Duplex */
++#define OETH_MODER_RST          0x00000800 /* Reset MAC */
++#define OETH_MODER_DLYCRCEN     0x00001000 /* Delayed CRC Enable */
++#define OETH_MODER_CRCEN        0x00002000 /* CRC Enable */
++#define OETH_MODER_HUGEN        0x00004000 /* Huge Enable */
++#define OETH_MODER_PAD          0x00008000 /* Pad Enable */
++#define OETH_MODER_RECSMALL     0x00010000 /* Receive Small */
++ 
++/* Interrupt Source Register */
++#define OETH_INT_TXB            0x00000001 /* Transmit Buffer IRQ */
++#define OETH_INT_TXE            0x00000002 /* Transmit Error IRQ */
++#define OETH_INT_RXF            0x00000004 /* Receive Frame IRQ */
++#define OETH_INT_RXE            0x00000008 /* Receive Error IRQ */
++#define OETH_INT_BUSY           0x00000010 /* Busy IRQ */
++#define OETH_INT_TXC            0x00000020 /* Transmit Control Frame IRQ */
++#define OETH_INT_RXC            0x00000040 /* Received Control Frame IRQ */
++
++/* Interrupt Mask Register */
++#define OETH_INT_MASK_TXB       0x00000001 /* Transmit Buffer IRQ Mask */
++#define OETH_INT_MASK_TXE       0x00000002 /* Transmit Error IRQ Mask */
++#define OETH_INT_MASK_RXF       0x00000004 /* Receive Frame IRQ Mask */
++#define OETH_INT_MASK_RXE       0x00000008 /* Receive Error IRQ Mask */
++#define OETH_INT_MASK_BUSY      0x00000010 /* Busy IRQ Mask */
++#define OETH_INT_MASK_TXC       0x00000020 /* Transmit Control Frame IRQ Mask */
++#define OETH_INT_MASK_RXC       0x00000040 /* Received Control Frame IRQ Mask */
++ 
++/* Control Module Mode Register */
++#define OETH_CTRLMODER_PASSALL  0x00000001 /* Pass Control Frames */
++#define OETH_CTRLMODER_RXFLOW   0x00000002 /* Receive Control Flow Enable */
++#define OETH_CTRLMODER_TXFLOW   0x00000004 /* Transmit Control Flow Enable */
++                               
++/* MII Mode Register */        
++#define OETH_MIIMODER_CLKDIV    0x000000FF /* Clock Divider */
++#define OETH_MIIMODER_NOPRE     0x00000100 /* No Preamble */
++#define OETH_MIIMODER_RST       0x00000200 /* MIIM Reset */
++ 
++/* MII Command Register */
++#define OETH_MIICOMMAND_SCANSTAT  0x00000001 /* Scan Status */
++#define OETH_MIICOMMAND_RSTAT     0x00000002 /* Read Status */
++#define OETH_MIICOMMAND_WCTRLDATA 0x00000004 /* Write Control Data */
++ 
++/* MII Address Register */
++#define OETH_MIIADDRESS_FIAD    0x0000001F /* PHY Address */
++#define OETH_MIIADDRESS_RGAD    0x00001F00 /* RGAD Address */
++ 
++/* MII Status Register */
++#define OETH_MIISTATUS_LINKFAIL 0x00000001 /* Link Fail */
++#define OETH_MIISTATUS_BUSY     0x00000002 /* MII Busy */
++#define OETH_MIISTATUS_NVALID   0x00000004 /* Data in MII Status Register is invalid */
++
++/* TODO */
++#define IRQ_ETH_0 13
++#define MACADDR0 0x00
++#define MACADDR1 0x1e
++#define MACADDR2 0xde
++#define MACADDR3 0xad
++#define MACADDR4 0xbe
++#define MACADDR5 0xef
 diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
 index 81b52b7..1cdf2d7 100644
 --- a/drivers/serial/Kconfig
@@ -7515,10 +8717,10 @@ index e58c87b..0b21a84 100644
  
 diff --git a/drivers/video/milkymistfb.c b/drivers/video/milkymistfb.c
 new file mode 100644
-index 0000000..c94d717
+index 0000000..0bda88f
 --- /dev/null
 +++ b/drivers/video/milkymistfb.c
-@@ -0,0 +1,686 @@
+@@ -0,0 +1,700 @@
 +/*
 + *  linux/drivers/video/milkymistfb.c -- Milkymist frame buffer device
 + *
@@ -7573,11 +8775,12 @@ index 0000000..c94d717
 +#define	VGA_CLOCK_SVGA		(0x01)
 +#define	VGA_CLOCK_XGA		(0x02)
 +
-+
++/* TODO: move these into the driver private structure (info->par) */
 +static void *videomemory;
 +static u_long videomemorysize = VIDEOMEMSIZE;
 +module_param(videomemorysize, ulong, 0);
 +
++static int already_mmaped = 0;
 +static unsigned milkymistfb_def_mode = 1;
 +
 +/*
@@ -7729,11 +8932,13 @@ index 0000000..c94d717
 +			   struct fb_info *info);
 +static int milkymistfb_mmap(struct fb_info *info,
 +		    struct vm_area_struct *vma);
++static int milkymistfb_release(struct fb_info *info, int user);
 +
 +static struct fb_ops milkymistfb_ops = {
 +	.owner		= THIS_MODULE,
-+	.fb_read        = fb_sys_read,
-+	.fb_write       = fb_sys_write,
++	.fb_read	= fb_sys_read,
++	.fb_write	= fb_sys_write,
++	.fb_release	= milkymistfb_release,
 +	.fb_check_var	= milkymistfb_check_var,
 +	.fb_set_par	= milkymistfb_set_par,
 +	.fb_setcolreg	= milkymistfb_setcolreg,
@@ -8013,15 +9218,26 @@ index 0000000..c94d717
 +	return 0;
 +}
 +
-+    /*
-+     *  Most drivers don't need their own mmap function 
-+     */
-+
++/* Based on bf54x-lq043fb.c */
 +static int milkymistfb_mmap(struct fb_info *info,
 +		    struct vm_area_struct *vma)
 +{
-+	return -EINVAL;
++	if (already_mmaped)
++		return -1;
++	already_mmaped = 1;
++
++	vma->vm_start = (unsigned long)(videomemory);
++	vma->vm_end = vma->vm_start + info->fix.smem_len;
++	vma->vm_flags |=  VM_MAYSHARE | VM_SHARED;
++	return 0;
 +}
++
++static int milkymistfb_release(struct fb_info *info, int user)
++{
++	already_mmaped = 0;
++	return 0;
++}
++
 +
 +#ifndef MODULE
 +static int __init milkymistfb_setup(char *options)
@@ -8105,7 +9321,7 @@ index 0000000..c94d717
 +	platform_set_drvdata(dev, info);
 +
 +	printk(KERN_INFO
-+	       "fb%d: Milkymist frame buffer at %X, size %ld k\n",
++	       "fb%d: Milkymist frame buffer at %p, size %ld k\n",
 +	       info->node, videomemory, videomemorysize >> 10);
 +	printk(KERN_INFO
 +	       "fb%d: mode is %s\n",
@@ -8219,235 +9435,10 @@ index d4fc609..69739a2 100644
  	  ELF FDPIC binaries are based on ELF, but allow the individual load
  	  segments of a binary to be located in memory independently of each
 diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 2f5d8db..dd4989b 100644
+index 2f5d8db..7f174f7 100644
 --- a/fs/binfmt_elf_fdpic.c
 +++ b/fs/binfmt_elf_fdpic.c
-@@ -157,6 +157,62 @@ static int elf_fdpic_fetch_phdrs(struct elf_fdpic_params *params,
- 	return 0;
- }
- 
-+static 
-+int relocate_at(int rtype, unsigned* insn_addr, unsigned target_addr)
-+{
-+  unsigned insn;
-+  unsigned opcode;
-+
-+  switch (rtype) {
-+  case R_LM32_32:
-+    /* we can't really test whether the original data is an instruction
-+       that could be relocated, so we simply overwrite the data that's
-+       there */
-+    //printk("R_LM32_32: overwriting 0x%08x with 0x%08x @ 0x%08x.\n", *insn_addr, target_addr, (unsigned)insn_addr);
-+    *insn_addr = target_addr;
-+    return 0; /* never fails */
-+
-+  case R_LM32_HI16:
-+    /* the HI16 case is permitted on mvhi (orhi) instructions only! */
-+    insn = *insn_addr;
-+    if ((insn >> 26) == 0x1e) { /* the opcode for orhi is 6b'011110 (0x1e) */
-+      insn &= 0xffff0000;
-+      insn |= (target_addr >> 16);
-+      *insn_addr = insn;
-+      return 0;
-+    }
-+    //printk("insn word 0x%08x\n", insn);
-+    break;
-+
-+  case R_LM32_LO16:
-+    insn = *insn_addr;
-+    if ((insn >> 26) == 0x0e) { /* the opcode for ori is 6b'001110 (0x0e) */
-+      insn &= 0xffff0000;
-+      insn |= (target_addr & 0xffff);
-+      *insn_addr = insn;
-+      return 0;
-+    }
-+    break;
-+
-+  case R_LM32_CALL:
-+  case R_LM32_BRANCH:
-+    /* we simply test that a PC-relative branch is used, otherwise we report an error */
-+    insn = *insn_addr;
-+    opcode = insn >> 26;
-+    if( (opcode == 0x3e /* calli */) ||
-+				(opcode == 0x38 /* bi */ ) ||
-+				((opcode >= 0x11) && (opcode <= 0x15) /* the various PC-relative branches */)) {
-+      return 0;
-+    }
-+    break;
-+
-+  default:
-+    printk("ignoring relocation type %d @ 0x%08x\n", rtype, *insn_addr);
-+  }
-+
-+  return -1;
-+}
-+
- /*****************************************************************************/
- /*
-  * load an fdpic binary into various bits of memory
-@@ -423,6 +479,161 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm,
- 			    dynaddr);
- #endif
- 
-+	/* hack start */
-+	{
-+		// get section headers
-+		Elf32_Shdr* shdrs = NULL;
-+		int num_shdrs;
-+		int i;
-+		int relocations_found;
-+		// also get symbol table
-+		Elf32_Sym* syms = NULL;
-+		int num_syms;
-+
-+		relocations_found = 0;
-+
-+		if( exec_params.hdr.e_shnum == 0 ||
-+				exec_params.hdr.e_shentsize == 0 ||
-+				exec_params.hdr.e_shoff == 0 ) {
-+			printk(KERN_ERR "Error: section headers missing for relocation!\n");
-+			retval = -EINVAL;
-+			goto error;
-+		}
-+
-+		// alloc mem for section headers
-+		shdrs = kmalloc(exec_params.hdr.e_shentsize * exec_params.hdr.e_shnum, GFP_KERNEL);
-+		num_shdrs = exec_params.hdr.e_shnum;
-+		if( !shdrs ) {
-+			retval = -ENOMEM;
-+			printk("%s:%d ENOMEM!\n", __FILE__, __LINE__);
-+			goto error;
-+		}
-+
-+		// retrieve from file
-+		retval = kernel_read(bprm->file, exec_params.hdr.e_shoff, (char *) shdrs,
-+				exec_params.hdr.e_shentsize * exec_params.hdr.e_shnum);
-+		/* exec_params.hdr.e_shentsize * exec_params.hdr.e_shnum == sizeof(Elf32_Shdr)*num_shdrs */
-+		if (retval < 0) {
-+			printk("%s:%d error reading: %d!\n", __FILE__, __LINE__, retval);
-+			kfree(shdrs);
-+			goto error;
-+		}
-+
-+#if 0
-+		// print them for debugging
-+		for(i = 0; i < num_shdrs; ++i)
-+		{
-+			printk("Elf32_Shdr %2d: type=%02lx flags=%02lx addr=%08lx off=%08lx "
-+				"size=%08lx link=%02lx info=%02lx addralign=%02lx entsize=%02lx name[idx]=%d\n",
-+				i, shdrs[i].sh_type, shdrs[i].sh_flags, shdrs[i].sh_addr,
-+				shdrs[i].sh_offset, shdrs[i].sh_size, shdrs[i].sh_link,
-+				shdrs[i].sh_info, shdrs[i].sh_addralign, shdrs[i].sh_entsize,
-+				shdrs[i].sh_name);
-+		}
-+#endif
-+
-+		// find symtab
-+		for(i = 0; i < num_shdrs; ++i)
-+		{
-+			if( shdrs[i].sh_type == SHT_SYMTAB ) {
-+				// alloc mem
-+				syms = kmalloc(shdrs[i].sh_size, GFP_KERNEL);
-+				if( !syms ) {
-+					printk("%s:%d ENOMEM!\n", __FILE__, __LINE__);
-+					retval = -ENOMEM;
-+					kfree(shdrs);
-+					goto error;
-+				}
-+
-+				// retrieve from file
-+				retval = kernel_read(bprm->file, shdrs[i].sh_offset, (char *) syms, shdrs[i].sh_size);
-+				num_syms = shdrs[i].sh_size / sizeof(Elf32_Sym);
-+				if (retval < 0) {
-+					printk("%s:%d error reading: %d!\n", __FILE__, __LINE__, retval);
-+					kfree(syms);
-+					kfree(shdrs);
-+					goto error;
-+				}
-+				i = num_shdrs;
-+				break;
-+			}
-+		}
-+
-+		// loop through all relocation sections
-+		for(i = 0; i < num_shdrs; ++i)
-+		{
-+			Elf32_Shdr* shdr = &shdrs[i];
-+
-+			// skip sections which are not RELA sections
-+			if( shdr->sh_type != SHT_RELA )
-+				continue;
-+
-+			{
-+				Elf32_Rela* relas;
-+				int num_relas;
-+				int j;
-+
-+				// alloc mem
-+				relas = kmalloc(shdr->sh_size, GFP_KERNEL);
-+				if( !relas ) {
-+					printk("%s:%d ENOMEM!\n", __FILE__, __LINE__);
-+					retval = -ENOMEM;
-+					kfree(syms);
-+					kfree(shdrs);
-+					goto error;
-+				}
-+
-+				// retrieve from file
-+				retval = kernel_read(bprm->file, shdr->sh_offset, (char *) relas, shdr->sh_size);
-+				num_relas = shdr->sh_size / sizeof(Elf32_Rela);
-+				if (retval < 0) {
-+					printk("%s:%d error reading: %d!\n", __FILE__, __LINE__, retval);
-+					kfree(syms);
-+					kfree(shdrs);
-+					kfree(relas);
-+					goto error;
-+				}
-+
-+				// get rela section
-+				//printk("section %d: applying %d relocations\n", i, num_relas);
-+				for(j = 0; j < num_relas; ++j) {
-+					Elf32_Rela* rela = &relas[j];
-+					unsigned* orig_insn = (unsigned*)(rela->r_offset + current->mm->start_code);
-+					// remember we found something
-+					relocations_found++;
-+
-+					/*
-+					printk("offset=%08lx addend=%08lx info=%08lx [sym=%06lx type=%02lx sym@%08lx]\n",
-+							rela->r_offset, rela->r_addend, rela->r_info,
-+							ELF32_R_SYM(rela->r_info), ELF32_R_TYPE(rela->r_info),
-+							syms[ELF32_R_SYM(rela->r_info)].st_value);
-+							*/
-+
-+					retval = relocate_at(ELF32_R_TYPE(rela->r_info), orig_insn,
-+							current->mm->start_code + syms[ELF32_R_SYM(rela->r_info)].st_value + rela->r_addend);
-+					if( retval != 0 ) {
-+						printk("offset=%08lx addend=%08lx info=%08lx [sym=%06lx type=%02lx sym@%08lx]\n",
-+								(unsigned long)rela->r_offset, (unsigned long)rela->r_addend, (unsigned long)rela->r_info,
-+								(unsigned long)ELF32_R_SYM(rela->r_info), (unsigned long)ELF32_R_TYPE(rela->r_info),
-+								(unsigned long)syms[ELF32_R_SYM(rela->r_info)].st_value);
-+						printk("Warning: relocation returned %d!\n", retval);
-+					}
-+				}
-+
-+				kfree(relas);
-+			}
-+		}
-+
-+		kfree(syms);
-+		kfree(shdrs);
-+
-+		if( relocations_found < 50 ) {
-+			printk(KERN_ERR "Error: not enough relocations found (%d)\n", relocations_found);
-+			goto error;
-+		}
-+	}
-+	/* hack end */
-+
- 	/* everything is now ready... get the userspace context ready to roll */
- 	entryaddr = interp_params.entry_addr ?: exec_params.entry_addr;
- 	start_thread(regs, entryaddr, current->mm->start_stack);
-@@ -1443,6 +1654,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
+@@ -1443,6 +1443,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
  	t->num_notes++;
  	sz += notesize(&t->notes[0]);
  
@@ -8455,7 +9446,7 @@ index 2f5d8db..dd4989b 100644
  	t->prstatus.pr_fpvalid = elf_core_copy_task_fpregs(p, NULL, &t->fpu);
  	if (t->prstatus.pr_fpvalid) {
  		fill_note(&t->notes[1], "CORE", NT_PRFPREG, sizeof(t->fpu),
-@@ -1450,6 +1662,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
+@@ -1450,6 +1451,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
  		t->num_notes++;
  		sz += notesize(&t->notes[1]);
  	}
@@ -8463,7 +9454,7 @@ index 2f5d8db..dd4989b 100644
  
  #ifdef ELF_CORE_COPY_XFPREGS
  	if (elf_core_copy_task_xfpregs(p, &t->xfpu)) {
-@@ -1571,7 +1784,9 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
+@@ -1571,7 +1573,9 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
   	struct task_struct *g, *p;
   	LIST_HEAD(thread_list);
   	struct list_head *t;
@@ -8473,7 +9464,7 @@ index 2f5d8db..dd4989b 100644
  #ifdef ELF_CORE_COPY_XFPREGS
  	elf_fpxregset_t *xfpu = NULL;
  #endif
-@@ -1607,9 +1822,11 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
+@@ -1607,9 +1611,11 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
  	notes = kmalloc(NUM_NOTES * sizeof(struct memelfnote), GFP_KERNEL);
  	if (!notes)
  		goto cleanup;
@@ -8485,7 +9476,7 @@ index 2f5d8db..dd4989b 100644
  #ifdef ELF_CORE_COPY_XFPREGS
  	xfpu = kmalloc(sizeof(*xfpu), GFP_KERNEL);
  	if (!xfpu)
-@@ -1682,11 +1899,13 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
+@@ -1682,11 +1688,13 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
  	fill_note(&notes[numnote++], "CORE", NT_AUXV,
  		  i * sizeof(elf_addr_t), auxv);
  
@@ -8500,7 +9491,7 @@ index 2f5d8db..dd4989b 100644
  #ifdef ELF_CORE_COPY_XFPREGS
  	if (elf_core_copy_task_xfpregs(current, xfpu))
  		fill_note(notes + numnote++,
-@@ -1808,7 +2027,9 @@ cleanup:
+@@ -1808,7 +1816,9 @@ cleanup:
  	kfree(prstatus);
  	kfree(psinfo);
  	kfree(notes);
@@ -9276,10 +10267,10 @@ index 0000000..1a9818c
 +#endif /* _LM32_ASM_DMA_H */
 diff --git a/include/asm-lm32/elf.h b/include/asm-lm32/elf.h
 new file mode 100644
-index 0000000..dd6eb92
+index 0000000..a2b40b6
 --- /dev/null
 +++ b/include/asm-lm32/elf.h
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,121 @@
 +/*
 + * (C) Copyright 2007
 + *     Theobroma Systems <www.theobroma-systems.com>
@@ -9334,6 +10325,13 @@ index 0000000..dd6eb92
 +#define R_LM32_BRANCH                    8
 +#define R_LM32_GNU_VTINHERIT             9
 +#define R_LM32_GNU_VTENTRY               10
++#define R_LM32_16_GOT                    11
++#define R_LM32_GOTOFF_HI16               12
++#define R_LM32_GOTOFF_LO16               13
++#define R_LM32_COPY                      14
++#define R_LM32_GLOB_DAT                  15
++#define R_LM32_JMP_SLOT                  16
++#define R_LM32_RELATIVE                  17
 +
 +typedef unsigned long elf_greg_t;
 +
@@ -9355,16 +10353,15 @@ index 0000000..dd6eb92
 +#define ELF_CLASS	ELFCLASS32
 +#define ELF_DATA	ELFDATA2MSB
 +#define ELF_ARCH	EM_LM32
-+#define EM_LM32 0x666 // FIXME
 +
 +#define ELF_PLAT_INIT(_r, load_addr)	do { } while(0)
 +
 +#define ELF_FDPIC_PLAT_INIT(_regs, _exec_map_addr, _interp_map_addr, _dynamic_addr)	\
 +do { \
-+	_regs->r6 = 0; /* 6th argument to uclibc start: rtld_fini = NULL */ \
 +	_regs->r11	= _exec_map_addr;				\
 +	_regs->r12	= _interp_map_addr;				\
 +	_regs->r13	= _dynamic_addr;				\
++	_regs->r14	= 0; /* 6th argument to uclibc start: rtld_fini = NULL */ \
 +} while(0)
 +
 +#define USE_ELF_CORE_DUMP
@@ -10354,7 +11351,7 @@ index 0000000..281546e
 +#endif
 diff --git a/include/asm-lm32/page.h b/include/asm-lm32/page.h
 new file mode 100644
-index 0000000..6ce8f08
+index 0000000..74c4389
 --- /dev/null
 +++ b/include/asm-lm32/page.h
 @@ -0,0 +1,120 @@
@@ -10405,7 +11402,7 @@ index 0000000..6ce8f08
 +/* PAGE_SHIFT determines the page size */
 +
 +/* TODO: determine good page size, 12 means 2^12 bytes page size */
-+#define PAGE_SHIFT	(12)
++#define PAGE_SHIFT	(13)
 +#define PAGE_SIZE	(1UL << PAGE_SHIFT)
 +#define PAGE_MASK	(~(PAGE_SIZE-1))
 +
@@ -13102,10 +14099,10 @@ index 0000000..6cecbbb
 +#include <asm-generic/unaligned.h>
 diff --git a/include/asm-lm32/unistd.h b/include/asm-lm32/unistd.h
 new file mode 100644
-index 0000000..5fa6b12
+index 0000000..2a6254a
 --- /dev/null
 +++ b/include/asm-lm32/unistd.h
-@@ -0,0 +1,417 @@
+@@ -0,0 +1,418 @@
 +/*
 + * (C) Copyright 2007
 + *     Theobroma Systems <www.theobroma-systems.com>
@@ -13491,8 +14488,9 @@ index 0000000..5fa6b12
 +#define __NR_shmctl		344
 +#define __NR_shmdt		345
 +#define __NR_shmget		346
++#define __NR_semtimedop		348
 +
-+#define __NR_syscall		347
++#define __NR_syscall		348
 +#define NR_syscalls		__NR_syscall
 +
 +#ifdef __KERNEL__
@@ -13585,6 +14583,18 @@ index 0000000..b33141b
 +#define HOST_STACK_END_ADDR (u.start_stack + u.u_ssize * NBPG)
 +
 +#endif
+diff --git a/include/linux/elf-em.h b/include/linux/elf-em.h
+index 5834e84..6b9d724 100644
+--- a/include/linux/elf-em.h
++++ b/include/linux/elf-em.h
+@@ -32,6 +32,7 @@
+ #define EM_M32R		88	/* Renesas M32R */
+ #define EM_H8_300	46	/* Renesas H8/300,300H,H8S */
+ #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
++#define EM_LM32         138     /* Lattice Mico32 */
+ #define EM_FRV		0x5441	/* Fujitsu FR-V */
+ #define EM_AVR32	0x18ad	/* Atmel AVR32 */
+ 
 diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
 index 81f3a31..875af58 100644
 --- a/include/linux/mtd/map.h
