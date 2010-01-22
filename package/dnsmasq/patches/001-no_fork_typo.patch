@@ -1,0 +1,11 @@
+--- a/src/config.h
++++ b/src/config.h
+@@ -287,7 +287,7 @@ NOTES:
+ #endif
+ 
+ /* Can't do scripts without fork */
+-#ifdef NOFORK
++#ifdef NO_FORK
+ #  undef HAVE_SCRIPT
+ #endif
+ 
