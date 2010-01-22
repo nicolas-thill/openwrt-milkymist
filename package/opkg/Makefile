@@ -49,6 +49,12 @@ CONFIGURE_ARGS += \
 	--disable-gpg \
 	--with-ipkgetcdir=/etc
 
+ifneq ($(CONFIG_lm32),)
+  CONFIGURE_VARS += \
+	CPPFLAGS="$(TARGET_CPPFLAGS) -D__uClinux__" \
+	LDFLAGS="$(TARGET_LDFLAGS) -Wl,-q"
+endif
+
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \
 		autoreconf -v --install || exit 1 \
