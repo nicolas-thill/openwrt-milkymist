@@ -33,10 +33,15 @@ define Package/dnsmasq/conffiles
 /etc/dnsmasq.conf
 endef
 
+ifneq ($(CONFIG_lm32),)
+  TARGET_LDFLAGS += -Wl,-q
+endif
+
 define Build/Compile
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		$(TARGET_CONFIGURE_OPTS) \
 		CFLAGS="$(TARGET_CFLAGS) -DHAVE_ISC_READER=1" \
+		LDFLAGS="$(TARGET_LDFLAGS)" \
 		BINDIR="/usr/sbin" MANDIR="/usr/man" \
 		AWK="awk" \
 		all
