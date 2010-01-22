@@ -1,0 +1,14 @@
+--- a/libbb/gz_open.c
++++ b/libbb/gz_open.c
+@@ -38,7 +38,11 @@ gz_open(FILE *compressed_file, int *pid)
+ 		perror_msg("pipe");
+ 		return(NULL);
+ 	}
++#ifdef __uClinux__
++	if ((*pid = vfork()) == -1) {
++#else
+ 	if ((*pid = fork()) == -1) {
++#endif
+ 		perror_msg("fork");
+ 		return(NULL);
+ 	}
