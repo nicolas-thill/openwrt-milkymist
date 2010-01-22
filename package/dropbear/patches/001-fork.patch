@@ -1,0 +1,29 @@
+--- a/compat.c
++++ b/compat.c
+@@ -162,7 +162,11 @@ int daemon(int nochdir, int noclose) {
+ 
+ 	int fd;
+ 
++#ifdef __uClinux__
++	switch (vfork()) {
++#else
+ 	switch (fork()) {
++#endif
+ 		case -1:
+ 			return (-1);
+ 		case 0:
+--- a/svr-main.c
++++ b/svr-main.c
+@@ -269,8 +269,12 @@ void main_noinetd() {
+ #ifdef DEBUG_NOFORK
+ 			fork_ret = 0;
+ #else
++#ifdef __uClinux__
++			fork_ret = vfork();
++#else
+ 			fork_ret = fork();
+ #endif
++#endif
+ 			if (fork_ret < 0) {
+ 				dropbear_log(LOG_WARNING, "error forking: %s", strerror(errno));
+ 				goto out;
