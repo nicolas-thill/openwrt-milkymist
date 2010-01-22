@@ -25,6 +25,7 @@ DEFAULT_PACKAGES:= \
 	busybox \
 	dnsmasq \
 	dropbear \
+	opkg \
 
 KERNEL_MAKEOPTS += LDFLAGS_BUILD_ID=""
 
