@@ -32,6 +32,13 @@ define Package/libltdl
   URL:=http://www.gnu.org/software/libtool/
 endef
 
+ifneq ($(CONFIG_lm32),)
+  CONFIGURE_ARGS += \
+	--disable-shared
+  HOST_CONFIGURE_ARGS += \
+	--disable-shared
+endif
+
 define Build/InstallDev
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		bindir="$(2)/bin" \
