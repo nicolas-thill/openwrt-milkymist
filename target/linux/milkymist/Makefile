@@ -23,6 +23,8 @@ CFLAGS:=-O2 -pipe  -funit-at-a-time -mmultiply-enabled -mdivide-enabled -mbarrel
 DEFAULT_PACKAGES:= \
 	base-files \
 	busybox \
+	dnsmasq \
+	dropbear \
 
 KERNEL_MAKEOPTS += LDFLAGS_BUILD_ID=""
 
