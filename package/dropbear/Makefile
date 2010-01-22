@@ -63,6 +63,12 @@ CONFIGURE_ARGS += \
 	--disable-pututxline \
 	--disable-zlib
 
+ifneq ($(CONFIG_lm32),)
+  CONFIGURE_VARS+= \
+	CPPFLAGS="$(TARGET_CPPFLAGS) -D__uClinux__" \
+	LDFLAGS="-Wl,-q"
+endif
+
 define Build/Configure
 	$(SED) 's,^/\* #define PKG_MULTI.*,#define PKG_MULTI,g' $(PKG_BUILD_DIR)/options.h
 	$(SED) 's,^#define DO_HOST_LOOKUP,/* & */,g' $(PKG_BUILD_DIR)/options.h
