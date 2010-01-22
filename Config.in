@@ -141,6 +141,7 @@ config SHADOW_PASSWORDS
 
 choice
 	prompt "Binary stripping method"
+	default USE_STRIP   if lm32
 	default USE_STRIP   if EXTERNAL_TOOLCHAIN
 	default USE_STRIP   if USE_GLIBC || USE_EGLIBC
 	default USE_SSTRIP
@@ -167,6 +168,14 @@ choice
 		  This will install binaries stripped using sstrip
 
 endchoice
+
+config STRIP_ARGS
+	string
+	prompt "Strip arguments"
+	depends USE_STRIP
+	default "--strip-unneeded --remove-section=.comment --remove-section=.note" if DEBUG
+	default "--strip-unneeded --strip-debug --remove-section=.comment --remove-section=.note" if lm32
+	default "--strip-all"
 
 config USE_MKLIBS
 	bool "Strip unnecessary functions from libraries"
