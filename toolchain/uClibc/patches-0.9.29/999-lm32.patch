@@ -1,51 +1,7 @@
-diff --git a/Rules.mak b/Rules.mak
-index d054bbb..06cfbc1 100644
---- a/Rules.mak
-+++ b/Rules.mak
-@@ -154,7 +154,11 @@ OPTIMIZATION+=$(call check_gcc,-fno-strength-reduce,)
- endif
- 
- ifeq ($(UCLIBC_FORMAT_FDPIC_ELF),y)
--	PICFLAG:=-mfdpic
-+	ifeq ($(TARGET_ARCH),lm32)
-+		PICFLAG:=
-+	else
-+		PICFLAG:=-mfdpic
-+	endif
- else
- 	PICFLAG:=-fPIC
- endif
-@@ -241,6 +245,13 @@ ifeq ($(TARGET_ARCH),nios)
- 	CPU_CFLAGS-y+=-m32
- endif
- 
-+
-+ifeq ($(TARGET_ARCH),lm32)
-+## FIXME: revisit & make configurable through options
-+	CPU_LDFLAGS-y+=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
-+	CPU_CFLAGS-y+=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
-+endif
-+
- ifeq ($(TARGET_ARCH),sh)
- 	OPTIMIZATION+=-fstrict-aliasing
- 	OPTIMIZATION+= $(call check_gcc,-mprefergot,)
-@@ -410,7 +421,11 @@ endif
- LDFLAGS:=$(LDFLAGS_NOSTRIP) -z defs
- ifeq ($(DODEBUG),y)
- #CFLAGS += -g3
-+ifeq ($(TARGET_ARCH),lm32)
-+CFLAGS += -O2 -g3
-+else
- CFLAGS += -O0 -g3
-+endif
- else
- CFLAGS += $(OPTIMIZATION) $(XARCH_CFLAGS)
- endif
-diff --git a/extra/Configs/Config.in b/extra/Configs/Config.in
-index 8eab394..26fdb13 100644
---- a/extra/Configs/Config.in
-+++ b/extra/Configs/Config.in
-@@ -43,6 +43,9 @@ config TARGET_i960
+diff -Naur uClibc-0.9.29.orig/extra/Configs/Config.in uClibc-0.9.29/extra/Configs/Config.in
+--- uClibc-0.9.29.orig/extra/Configs/Config.in	2007-04-17 19:24:29.000000000 +0200
++++ uClibc-0.9.29/extra/Configs/Config.in	2010-01-23 11:34:05.000000000 +0100
+@@ -43,6 +43,9 @@
  config TARGET_ia64
  	bool "ia64"
  
@@ -55,7 +11,7 @@ index 8eab394..26fdb13 100644
  config TARGET_m68k
  	bool "m68k"
  
-@@ -128,6 +131,10 @@ if TARGET_ia64
+@@ -128,6 +131,10 @@
  source "extra/Configs/Config.ia64"
  endif
  
@@ -66,11 +22,9 @@ index 8eab394..26fdb13 100644
  if TARGET_m68k
  source "extra/Configs/Config.m68k"
  endif
-diff --git a/extra/Configs/Config.lm32 b/extra/Configs/Config.lm32
-new file mode 100644
-index 0000000..95826f3
---- /dev/null
-+++ b/extra/Configs/Config.lm32
+diff -Naur uClibc-0.9.29.orig/extra/Configs/Config.lm32 uClibc-0.9.29/extra/Configs/Config.lm32
+--- uClibc-0.9.29.orig/extra/Configs/Config.lm32	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/extra/Configs/Config.lm32	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,18 @@
 +#
 +# For a description of the syntax of this configuration file,
@@ -90,18 +44,15 @@ index 0000000..95826f3
 +
 +config ARCH_CFLAGS
 +	string
-diff --git a/extra/Configs/defconfigs/lm32 b/extra/Configs/defconfigs/lm32
-new file mode 100644
-index 0000000..63fb19d
---- /dev/null
-+++ b/extra/Configs/defconfigs/lm32
+diff -Naur uClibc-0.9.29.orig/extra/Configs/defconfigs/lm32 uClibc-0.9.29/extra/Configs/defconfigs/lm32
+--- uClibc-0.9.29.orig/extra/Configs/defconfigs/lm32	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/extra/Configs/defconfigs/lm32	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1 @@
 +TARGET_lm32=y
-diff --git a/include/elf.h b/include/elf.h
-index 19805d7..67478e4 100644
---- a/include/elf.h
-+++ b/include/elf.h
-@@ -260,7 +260,8 @@ typedef struct
+diff -Naur uClibc-0.9.29.orig/include/elf.h uClibc-0.9.29/include/elf.h
+--- uClibc-0.9.29.orig/include/elf.h	2006-11-17 07:51:34.000000000 +0100
++++ uClibc-0.9.29/include/elf.h	2010-01-23 11:34:05.000000000 +0100
+@@ -260,7 +260,8 @@
  #define EM_BLACKFIN	106		/* Analog Devices Blackfin */
  #define EM_ALTERA_NIOS2	113	/* Altera Nios II soft-core processor */
  #define EM_CRX		114		/* National Semiconductor CRX */
@@ -111,10 +62,24 @@ index 19805d7..67478e4 100644
  
  /* If it is necessary to assign new unofficial EM_* values, please pick large
     random numbers (0x8523, 0xa7f2, etc.) to minimize the chances of collision
-diff --git a/libc/sysdeps/linux/common/getpagesize.c b/libc/sysdeps/linux/common/getpagesize.c
-index efb5fcb..472b03d 100644
---- a/libc/sysdeps/linux/common/getpagesize.c
-+++ b/libc/sysdeps/linux/common/getpagesize.c
+diff -Naur uClibc-0.9.29.orig/libc/misc/internals/__uClibc_main.c uClibc-0.9.29/libc/misc/internals/__uClibc_main.c
+--- uClibc-0.9.29.orig/libc/misc/internals/__uClibc_main.c	2007-01-11 23:39:13.000000000 +0100
++++ uClibc-0.9.29/libc/misc/internals/__uClibc_main.c	2010-01-23 11:46:55.000000000 +0100
+@@ -390,9 +390,11 @@
+     if (likely(__errno_location!=NULL))
+ 	*(__errno_location()) = 0;
+ 
++#if 0
+     /* Set h_errno to 0 as well */
+     if (likely(__h_errno_location!=NULL))
+ 	*(__h_errno_location()) = 0;
++#endif
+ 
+     /*
+      * Finally, invoke application's main and then exit.
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/common/getpagesize.c uClibc-0.9.29/libc/sysdeps/linux/common/getpagesize.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/common/getpagesize.c	2006-03-10 17:20:23.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/common/getpagesize.c	2010-01-23 11:34:05.000000000 +0100
 @@ -19,6 +19,7 @@
  #include <unistd.h>
  #include <features.h>
@@ -123,137 +88,9 @@ index efb5fcb..472b03d 100644
  
  extern size_t __pagesize;
  
-diff --git a/libc/sysdeps/linux/lm32/Makefile b/libc/sysdeps/linux/lm32/Makefile
-new file mode 100644
-index 0000000..3970f62
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/Makefile
-@@ -0,0 +1,13 @@
-+# Makefile for uClibc
-+#
-+# Copyright (C) 2000-2006 Erik Andersen <andersen@uclibc.org>
-+#
-+# Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
-+#
-+
-+top_srcdir=../../../../
-+top_builddir=../../../../
-+all: objs
-+include $(top_builddir)Rules.mak
-+include Makefile.arch
-+include $(top_srcdir)Makerules
-diff --git a/libc/sysdeps/linux/lm32/Makefile.arch b/libc/sysdeps/linux/lm32/Makefile.arch
-new file mode 100644
-index 0000000..43e4482
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/Makefile.arch
-@@ -0,0 +1,12 @@
-+# Makefile for uClibc
-+#
-+# Copyright (C) 2000-2006 Erik Andersen <andersen@uclibc.org>
-+#
-+# Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
-+#
-+
-+CSRC := brk.c clone.c syscall.c __syscall_error.c setjmp_aux.c mmap.c
-+
-+SSRC := __longjmp.S setjmp.S bsd-_setjmp.S bsd-setjmp.S vfork.S
-+
-+include $(top_srcdir)libc/sysdeps/linux/Makefile.commonarch
-diff --git a/libc/sysdeps/linux/lm32/__longjmp.c b/libc/sysdeps/linux/lm32/__longjmp.c
-new file mode 100644
-index 0000000..1a714c8
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/__longjmp.c
-@@ -0,0 +1,59 @@
-+#include <features.h>
-+#include <setjmp.h>
-+#include <stdlib.h>
-+
-+#ifndef	__GNUC__
-+  #error This file uses GNU C extensions; you must compile with GCC.
-+#endif
-+
-+extern void __longjmp (__jmp_buf __env, int __val) attribute_noreturn;
-+libc_hidden_proto(__longjmp)
-+
-+void __longjmp (__jmp_buf env, int val_arg)
-+{
-+    /* Make sure that gcc doesn't try to be smart about r2 */
-+    register int val __asm__ ("r2") = val_arg;
-+
-+    /* Get the GP. */
-+    asm volatile ("lw gp, %0" : : "m"(env[0].__gp));
-+  
-+    /* Get the callee-saved registers.  */
-+    asm volatile ("lw r11, %0" : : "m" (env[0].__regs[0]));
-+    asm volatile ("lw r12, %0" : : "m" (env[0].__regs[1]));
-+    asm volatile ("lw r13, %0" : : "m" (env[0].__regs[2]));
-+    asm volatile ("lw r14, %0" : : "m" (env[0].__regs[3]));
-+    asm volatile ("lw r15, %0" : : "m" (env[0].__regs[4]));
-+    asm volatile ("lw r16, %0" : : "m" (env[0].__regs[5]));
-+    asm volatile ("lw r17, %0" : : "m" (env[0].__regs[6]));
-+    asm volatile ("lw r18, %0" : : "m" (env[0].__regs[7]));
-+    asm volatile ("lw r19, %0" : : "m" (env[0].__regs[8]));
-+    asm volatile ("lw r20, %0" : : "m" (env[0].__regs[9]));
-+    asm volatile ("lw r21, %0" : : "m" (env[0].__regs[10]));
-+    asm volatile ("lw r22, %0" : : "m" (env[0].__regs[11]));
-+    asm volatile ("lw r23, %0" : : "m" (env[0].__regs[12]));
-+    asm volatile ("lw r24, %0" : : "m" (env[0].__regs[13]));
-+    asm volatile ("lw r25, %0" : : "m" (env[0].__regs[14]));
-+
-+    /* Get the PC --- actually the return address  */
-+    asm volatile ("lw ra, %0" : : "m" (env[0].__pc));
-+
-+    /* Restore the stack pointer and the FP.  They have to be restored
-+       last and in a single asm as gcc, depending on options used, may
-+       use either of them to access env.  */
-+    asm volatile ("lw sp, %0\n"
-+		  "lw fp, %1\n"
-+		  : 
-+		  : "m" (env[0].__sp), "m" (env[0].__fp)
-+		  : "fp", "sp");
-+
-+    if (val == 0)
-+	asm volatile ("mvi r1, 1");
-+    else
-+	asm volatile ("mv  r1, %0" : : "r" (val));
-+
-+    asm volatile ("ret");
-+    
-+    /* Avoid `function does return' warnings.  */
-+    for (;;)
-+      ;
-+}  
-diff --git a/libc/sysdeps/linux/lm32/__syscall_error.c b/libc/sysdeps/linux/lm32/__syscall_error.c
-new file mode 100644
-index 0000000..5e109a8
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/__syscall_error.c
-@@ -0,0 +1,18 @@
-+/* Wrapper for setting errno.
-+ *
-+ * Copyright (C) 2000-2006 Erik Andersen <andersen@uclibc.org>
-+ *
-+ * Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
-+ */
-+
-+#include <errno.h>
-+#include <features.h>
-+
-+/* This routine is jumped to by all the syscall handlers, to stash
-+ * an error number into errno.  */
-+int __syscall_error(int err_no) attribute_hidden;
-+int __syscall_error(int err_no)
-+{
-+	__set_errno(err_no);
-+	return -1;
-+}
-diff --git a/libc/sysdeps/linux/lm32/bits/endian.h b/libc/sysdeps/linux/lm32/bits/endian.h
-new file mode 100644
-index 0000000..0a6b529
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/endian.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/endian.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/endian.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/endian.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/endian.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,7 @@
 +/* Lattice Mico32 (lm32) is big-endian.  */
 +
@@ -262,11 +99,9 @@ index 0000000..0a6b529
 +#endif
 +
 +#define __BYTE_ORDER __BIG_ENDIAN
-diff --git a/libc/sysdeps/linux/lm32/bits/fcntl.h b/libc/sysdeps/linux/lm32/bits/fcntl.h
-new file mode 100644
-index 0000000..871d189
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/fcntl.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/fcntl.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/fcntl.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/fcntl.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/fcntl.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,227 @@
 +/* O_*, F_*, FD_* bit values for Linux.
 +   Copyright (C) 2000, 2004 Free Software Foundation, Inc.
@@ -495,11 +330,9 @@ index 0000000..871d189
 +#endif
 +
 +__END_DECLS
-diff --git a/libc/sysdeps/linux/lm32/bits/kernel_stat.h b/libc/sysdeps/linux/lm32/bits/kernel_stat.h
-new file mode 100644
-index 0000000..b043a2c
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/kernel_stat.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/kernel_stat.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_stat.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/kernel_stat.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_stat.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,62 @@
 +#ifndef _BITS_STAT_STRUCT_H
 +#define _BITS_STAT_STRUCT_H
@@ -563,11 +396,9 @@ index 0000000..b043a2c
 +};
 +
 +#endif	/*  _BITS_STAT_STRUCT_H */
-diff --git a/libc/sysdeps/linux/lm32/bits/kernel_types.h b/libc/sysdeps/linux/lm32/bits/kernel_types.h
-new file mode 100644
-index 0000000..25b07ab
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/kernel_types.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/kernel_types.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_types.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/kernel_types.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/kernel_types.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,44 @@
 +/* Note that we use the exact same include guard #define names
 + * as asm/posix_types.h.  This will avoid gratuitous conflicts 
@@ -613,11 +444,9 @@ index 0000000..25b07ab
 +} __kernel_fsid_t;
 +
 +#endif /* __ARCH_LM32_POSIX_TYPES_H */
-diff --git a/libc/sysdeps/linux/lm32/bits/mman.h b/libc/sysdeps/linux/lm32/bits/mman.h
-new file mode 100644
-index 0000000..42ee1cf
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/mman.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/mman.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/mman.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/mman.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/mman.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,106 @@
 +/* Definitions for POSIX memory map interface.  Linux/MIPS version.
 +   Copyright (C) 1997, 2000, 2003, 2004, 2005, 2006
@@ -725,11 +554,9 @@ index 0000000..42ee1cf
 +# define POSIX_MADV_WILLNEED	3 /* Will need these pages.  */
 +# define POSIX_MADV_DONTNEED	4 /* Don't need these pages.  */
 +#endif
-diff --git a/libc/sysdeps/linux/lm32/bits/setjmp.h b/libc/sysdeps/linux/lm32/bits/setjmp.h
-new file mode 100644
-index 0000000..8472dcd
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/setjmp.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/setjmp.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/setjmp.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/setjmp.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/setjmp.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,55 @@
 +/* Define the machine-dependent type `jmp_buf'.  MIPS version.
 +   Copyright (C) 1992,93,95,97,2000 Free Software Foundation, Inc.
@@ -786,11 +613,9 @@ index 0000000..8472dcd
 +  ((void *) (address) < (void *) (jmpbuf)[0].__sp)
 +
 +#endif	/* bits/setjmp.h */
-diff --git a/libc/sysdeps/linux/lm32/bits/stackinfo.h b/libc/sysdeps/linux/lm32/bits/stackinfo.h
-new file mode 100644
-index 0000000..9e26de1
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/stackinfo.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/stackinfo.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/stackinfo.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/stackinfo.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/stackinfo.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,28 @@
 +/* Copyright (C) 1999 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -820,11 +645,9 @@ index 0000000..9e26de1
 +#define _STACK_GROWS_DOWN	1
 +
 +#endif	/* stackinfo.h */
-diff --git a/libc/sysdeps/linux/lm32/bits/syscalls.h b/libc/sysdeps/linux/lm32/bits/syscalls.h
-new file mode 100644
-index 0000000..6261c49
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/syscalls.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/syscalls.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/syscalls.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/syscalls.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/syscalls.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,122 @@
 +#ifndef _BITS_SYSCALLS_H
 +#define _BITS_SYSCALLS_H
@@ -948,11 +771,9 @@ index 0000000..6261c49
 +#endif /* __ASSEMBLER__ */
 +#endif /* _BITS_SYSCALLS_H */
 +
-diff --git a/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h b/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h
-new file mode 100644
-index 0000000..904b434
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_arch_features.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,42 @@
 +/*
 + * Track misc arch-specific features that aren't config options
@@ -996,11 +817,9 @@ index 0000000..904b434
 +#define __UCLIBC_HAVE_SIGNED_ZERO__
 +
 +#endif /* _BITS_UCLIBC_ARCH_FEATURES_H */
-diff --git a/libc/sysdeps/linux/lm32/bits/uClibc_page.h b/libc/sysdeps/linux/lm32/bits/uClibc_page.h
-new file mode 100644
-index 0000000..3455355
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/uClibc_page.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/uClibc_page.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_page.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/uClibc_page.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/uClibc_page.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,9 @@
 +#ifndef _UCLIBC_PAGE_H
 +#define _UCLIBC_PAGE_H
@@ -1011,11 +830,9 @@ index 0000000..3455355
 +
 +#endif /* _UCLIBC_PAGE_H */
 +
-diff --git a/libc/sysdeps/linux/lm32/bits/wordsize.h b/libc/sysdeps/linux/lm32/bits/wordsize.h
-new file mode 100644
-index 0000000..ba643b6
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bits/wordsize.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/wordsize.h uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/wordsize.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bits/wordsize.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bits/wordsize.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,19 @@
 +/* Copyright (C) 1999 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1036,11 +853,9 @@ index 0000000..ba643b6
 +   02111-1307 USA.  */
 +
 +#define __WORDSIZE	32
-diff --git a/libc/sysdeps/linux/lm32/brk.c b/libc/sysdeps/linux/lm32/brk.c
-new file mode 100644
-index 0000000..19bb121
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/brk.c
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/brk.c uClibc-0.9.29/libc/sysdeps/linux/lm32/brk.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/brk.c	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/brk.c	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,31 @@
 +#include <errno.h>
 +#include <unistd.h>
@@ -1073,11 +888,9 @@ index 0000000..19bb121
 +  return 0;
 +}
 +libc_hidden_def(brk)
-diff --git a/libc/sysdeps/linux/lm32/bsd-_setjmp.S b/libc/sysdeps/linux/lm32/bsd-_setjmp.S
-new file mode 100644
-index 0000000..3bcc4ab
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bsd-_setjmp.S
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bsd-_setjmp.S uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-_setjmp.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bsd-_setjmp.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-_setjmp.S	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,10 @@
 +/* This just does a tail-call to `__sigsetjmp (ARG, 0)'.
 +   We cannot do it in C because it must be a tail-call, so frame-unwinding
@@ -1089,11 +902,9 @@ index 0000000..3bcc4ab
 +setjmp:
 +	mv	r1, r0
 +	be	r0, r0, __sigsetjmp
-diff --git a/libc/sysdeps/linux/lm32/bsd-setjmp.S b/libc/sysdeps/linux/lm32/bsd-setjmp.S
-new file mode 100644
-index 0000000..ef595f5
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/bsd-setjmp.S
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bsd-setjmp.S uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-setjmp.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/bsd-setjmp.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/bsd-setjmp.S	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,11 @@
 +/* This just does a tail-call to `__sigsetjmp (ARG, 1)'.
 +   We cannot do it in C because it must be a tail-call, so frame-unwinding
@@ -1106,11 +917,9 @@ index 0000000..ef595f5
 +	mvi	r2, 1
 +	be	r0, r0, __sigsetjmp
 +
-diff --git a/libc/sysdeps/linux/lm32/clone.S b/libc/sysdeps/linux/lm32/clone.S
-new file mode 100644
-index 0000000..fddb3ee
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/clone.S
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/clone.S uClibc-0.9.29/libc/sysdeps/linux/lm32/clone.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/clone.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/clone.S	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,44 @@
 +#define _ERRNO_H
 +#include <features.h>
@@ -1156,16 +965,14 @@ index 0000000..fddb3ee
 +__error:	
 +	be	r0, r0, __syscall_error
 +#endif
-diff --git a/libc/sysdeps/linux/lm32/crt1.S b/libc/sysdeps/linux/lm32/crt1.S
-new file mode 100644
-index 0000000..ed90bb7
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/crt1.S
-@@ -0,0 +1,96 @@
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crt1.S uClibc-0.9.29/libc/sysdeps/linux/lm32/crt1.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crt1.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/crt1.S	2010-01-23 11:46:55.000000000 +0100
+@@ -0,0 +1,152 @@
 +/* This is the canonical entry point, usually the first thing in the text
 +   segment.  We use expect this to be set up as follows on the call:
 +
-+   r6		Contains a function pointer to be registered with `atexit'.
++   r14		Contains a function pointer to be registered with `atexit'.
 +
 +   sp 		The stack contains the arguments and environment:
 +		0(%esp)			argc
@@ -1179,6 +986,14 @@ index 0000000..ed90bb7
 +		that search backword through stack frames recognize the last
 +		stack frame.
 +*/
++
++/* setup by ELF_FDPIC_PLAT_INIT in include/asm-lm32/elf.h:
++ *
++ * r11 = _exec_map_addr
++ * r12 = _interp_map_addr
++ * r13 = _dynamic_addr
++ * r14 = _rtld_fini (= NULL)
++ */
 +
 +	.text
 +	.globl	_start
@@ -1205,35 +1020,76 @@ index 0000000..ed90bb7
 +	 */
 +	calli .Lcall
 +.Lcall:
++	mvhi    r15, hi(.Lcall)
++	ori	r15, r15, lo(.Lcall)
++	/* calculate offset between symbol addresses and real addresses */
++	/* r15 = symbol address of .Lcall, ra = real address of .Lcall */
++	sub r15, ra, r15
++	/* now r15 = value which has to be added to a symbol address to get a real address*/
 +	
-+	/* FIXME: revise for FDPIC/GOT usage */
++	/* TODO: use exec_fdpic_loadmap */
++	/* for now use offset */
++	mv r1, r15
++
++	/* get got start/end* addresses */
++	mvhi r2, hi(_got_start)
++	ori r2, r2, lo(_got_start)
++	mvhi r3, hi(_got_end)
++	ori r3, r3, lo(_got_end)
++	mvhi r4, hi(_data_rel_start)
++	ori r4, r4, lo(_data_rel_start)
++	mvhi r5, hi(_data_rel_end)
++	ori r5, r5, lo(_data_rel_end)
++
++	/* relocate got start/end* addresses */
++	add r2, r2, r15
++	add r3, r3, r15
++	add r4, r4, r15
++	add r5, r5, r15
++
++	/* get got start/end addresses */
++	lw r2, (r2+0)
++	lw r3, (r3+0)
++	lw r4, (r4+0)
++	lw r5, (r5+0)
++
++	/* relocate got start/end addresses */
++	add r2, r2, r15
++	add r3, r3, r15
++	add r4, r4, r15
++	add r5, r5, r15
++
++	/* relocate self */
++	calli __self_reloc
++	/* return value = relocated pointer to gp */
++	mv gp, r1
++
++	/* r1: main */
 +	mvhi	r1, hi(main)
 +	ori	r1, r1, lo(main)
-+	mvhi    r9, hi(.Lcall)
-+	ori	r9, r9, lo(.Lcall)
-+	sub	r1, r1, r9 /* subtract out what .Lcall was originally  */
-+	add	r1, r1, ra /* add the actual address of .Lcall back in */
++	add	r1, r1, r15 /* relocate */
 +
-+	/* TODO: check that this is actually at sp + 0 and not at sp + 4 */
++	/* r2: argc */
 +	lw	r2, (sp + 0)	/* load argc */
++
++	/* r3: argv */
 +	addi	r3, sp, 4	/* argv points to &sp[1] */
-+	addi    sp, sp, -4
++	addi    sp, sp, -4	/* fix stack, sp now reallypoints to next free place */
 +	
-+	/* FIXME: revise for PIC */
++	/* r4: init */
 +	mvhi	r4, hi(_init)
 +	ori	r4, r4, lo(_init)
-+	sub	r4, r4, r9 /* see above */
-+	add	r4, r4, ra
++	add	r4, r4, r15 /* relocate */
 +
-+	/* FIXME: revise for PIC */
++	/* r5: fini */
 +	mvhi	r5, hi(_fini)
 +	ori	r5, r5, lo(_fini)
-+	sub	r5, r5, r9 /* see above */
-+	add	r5, r5, ra
++	add	r5, r5, r15 /* relocate */
 +
-+	/* r6 already contains rtld_fini */
++	/* r6: rtld_fini */
++	mv r6, r14
 +
-+	/* r7 should contains sp */
++	/* r7 should contain sp */
 +	mv	r7, sp
 +	
 +	/* a 26-bit relative call should suffice for now. */
@@ -1250,19 +1106,24 @@ index 0000000..ed90bb7
 +	.weak data_start
 +	data_start = __data_start
 +
-+/*
 +	.globl _data_rel_start
 +_data_rel_start:
 +	.word __data_rel_start
 +	.globl _data_rel_end
 +_data_rel_end:
 +	.word __data_rel_end
-+*/
-diff --git a/libc/sysdeps/linux/lm32/crti.S b/libc/sysdeps/linux/lm32/crti.S
-new file mode 100644
-index 0000000..c8e1409
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/crti.S
++
++	.globl _got_start
++_got_start:
++	.word __got_start
++
++	.globl _got_end
++_got_end:
++	.word __got_end
++
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crti.S uClibc-0.9.29/libc/sysdeps/linux/lm32/crti.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crti.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/crti.S	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,18 @@
 +
 +	/* Copied from gcc */
@@ -1282,11 +1143,9 @@ index 0000000..c8e1409
 +_fini:        
 +        addi    sp, sp, -4        
 +        sw      (sp+4), ra
-diff --git a/libc/sysdeps/linux/lm32/crtn.S b/libc/sysdeps/linux/lm32/crtn.S
-new file mode 100644
-index 0000000..93dc03c
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/crtn.S
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crtn.S uClibc-0.9.29/libc/sysdeps/linux/lm32/crtn.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crtn.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/crtn.S	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,13 @@
 +	/* Copied from gcc */
 +
@@ -1301,11 +1160,128 @@ index 0000000..93dc03c
 +        lw      ra, (sp+4)
 +        addi    sp, sp, 4
 +        ret
-diff --git a/libc/sysdeps/linux/lm32/mmap.c b/libc/sysdeps/linux/lm32/mmap.c
-new file mode 100644
-index 0000000..ffec333
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/mmap.c
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crtreloc.c uClibc-0.9.29/libc/sysdeps/linux/lm32/crtreloc.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/crtreloc.c	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/crtreloc.c	2010-01-23 11:46:55.000000000 +0100
+@@ -0,0 +1,19 @@
++#include <sys/types.h>
++#include <link.h>
++
++void* attribute_hidden
++__self_reloc (unsigned long offset,
++		unsigned long* start, unsigned long* end,
++		unsigned long* start2, unsigned long* end2)
++{
++	unsigned long* p;
++	for(p = start; p != end; ++p) {
++		*p = *p + offset;
++	}
++	for(p = start2; p != end2; ++p) {
++		*p = *p + offset;
++	}
++  
++	return start;
++}
++
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/__longjmp.c uClibc-0.9.29/libc/sysdeps/linux/lm32/__longjmp.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/__longjmp.c	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/__longjmp.c	2010-01-23 11:34:05.000000000 +0100
+@@ -0,0 +1,59 @@
++#include <features.h>
++#include <setjmp.h>
++#include <stdlib.h>
++
++#ifndef	__GNUC__
++  #error This file uses GNU C extensions; you must compile with GCC.
++#endif
++
++extern void __longjmp (__jmp_buf __env, int __val) attribute_noreturn;
++libc_hidden_proto(__longjmp)
++
++void __longjmp (__jmp_buf env, int val_arg)
++{
++    /* Make sure that gcc doesn't try to be smart about r2 */
++    register int val __asm__ ("r2") = val_arg;
++
++    /* Get the GP. */
++    asm volatile ("lw gp, %0" : : "m"(env[0].__gp));
++  
++    /* Get the callee-saved registers.  */
++    asm volatile ("lw r11, %0" : : "m" (env[0].__regs[0]));
++    asm volatile ("lw r12, %0" : : "m" (env[0].__regs[1]));
++    asm volatile ("lw r13, %0" : : "m" (env[0].__regs[2]));
++    asm volatile ("lw r14, %0" : : "m" (env[0].__regs[3]));
++    asm volatile ("lw r15, %0" : : "m" (env[0].__regs[4]));
++    asm volatile ("lw r16, %0" : : "m" (env[0].__regs[5]));
++    asm volatile ("lw r17, %0" : : "m" (env[0].__regs[6]));
++    asm volatile ("lw r18, %0" : : "m" (env[0].__regs[7]));
++    asm volatile ("lw r19, %0" : : "m" (env[0].__regs[8]));
++    asm volatile ("lw r20, %0" : : "m" (env[0].__regs[9]));
++    asm volatile ("lw r21, %0" : : "m" (env[0].__regs[10]));
++    asm volatile ("lw r22, %0" : : "m" (env[0].__regs[11]));
++    asm volatile ("lw r23, %0" : : "m" (env[0].__regs[12]));
++    asm volatile ("lw r24, %0" : : "m" (env[0].__regs[13]));
++    asm volatile ("lw r25, %0" : : "m" (env[0].__regs[14]));
++
++    /* Get the PC --- actually the return address  */
++    asm volatile ("lw ra, %0" : : "m" (env[0].__pc));
++
++    /* Restore the stack pointer and the FP.  They have to be restored
++       last and in a single asm as gcc, depending on options used, may
++       use either of them to access env.  */
++    asm volatile ("lw sp, %0\n"
++		  "lw fp, %1\n"
++		  : 
++		  : "m" (env[0].__sp), "m" (env[0].__fp)
++		  : "fp", "sp");
++
++    if (val == 0)
++	asm volatile ("mvi r1, 1");
++    else
++	asm volatile ("mv  r1, %0" : : "r" (val));
++
++    asm volatile ("ret");
++    
++    /* Avoid `function does return' warnings.  */
++    for (;;)
++      ;
++}  
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/Makefile uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile	2010-01-23 11:34:05.000000000 +0100
+@@ -0,0 +1,13 @@
++# Makefile for uClibc
++#
++# Copyright (C) 2000-2006 Erik Andersen <andersen@uclibc.org>
++#
++# Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
++#
++
++top_srcdir=../../../../
++top_builddir=../../../../
++all: objs
++include $(top_builddir)Rules.mak
++include Makefile.arch
++include $(top_srcdir)Makerules
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/Makefile.arch uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile.arch
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/Makefile.arch	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/Makefile.arch	2010-01-23 11:46:55.000000000 +0100
+@@ -0,0 +1,12 @@
++# Makefile for uClibc
++#
++# Copyright (C) 2000-2006 Erik Andersen <andersen@uclibc.org>
++#
++# Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
++#
++
++CSRC := brk.c clone.c syscall.c __syscall_error.c setjmp_aux.c mmap.c crtreloc.c
++
++SSRC := __longjmp.S setjmp.S bsd-_setjmp.S bsd-setjmp.S vfork.S
++
++include $(top_srcdir)libc/sysdeps/linux/Makefile.commonarch
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/mmap.c uClibc-0.9.29/libc/sysdeps/linux/lm32/mmap.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/mmap.c	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/mmap.c	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,27 @@
 +#include <errno.h>
 +#include <unistd.h>
@@ -1334,52 +1310,9 @@ index 0000000..ffec333
 +}
 +
 +libc_hidden_def (mmap)
-diff --git a/libc/sysdeps/linux/lm32/setjmp.S b/libc/sysdeps/linux/lm32/setjmp.S
-new file mode 100644
-index 0000000..959ef11
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/setjmp.S
-@@ -0,0 +1,35 @@
-+/* Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
-+   This file is part of the GNU C Library.
-+
-+   The GNU C Library is free software; you can redistribute it and/or
-+   modify it under the terms of the GNU Lesser General Public
-+   License as published by the Free Software Foundation; either
-+   version 2.1 of the License, or (at your option) any later version.
-+
-+   The GNU C Library is distributed in the hope that it will be useful,
-+   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+   Lesser General Public License for more details.
-+
-+   You should have received a copy of the GNU Lesser General Public
-+   License along with the GNU C Library; if not, write to the Free
-+   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-+   02111-1307 USA.  */
-+
-+/* The function __sigsetjmp_aux saves all the registers, but it can't
-+   reliably access the stack or frame pointers, so we pass them in as
-+   extra arguments.  */
-+
-+.text
-+.global __sigsetjmp
-+.align 2;
-+.type __sigsetjmp,@function
-+
-+__sigsetjmp:
-+	mv	r3, sp
-+	mv	r4, fp
-+
-+	bi	__sigsetjmp_aux
-+
-+	.end	__sigsetjmp
-+	.size	__sigsetjmp,.-__sigsetjmp
-diff --git a/libc/sysdeps/linux/lm32/setjmp_aux.c b/libc/sysdeps/linux/lm32/setjmp_aux.c
-new file mode 100644
-index 0000000..1994823
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/setjmp_aux.c
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/setjmp_aux.c uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp_aux.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/setjmp_aux.c	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp_aux.c	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,64 @@
 +/* Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1445,11 +1378,48 @@ index 0000000..1994823
 +  /* Save the signal mask if requested.  */
 +  return __sigjmp_save (env, savemask);
 +}
-diff --git a/libc/sysdeps/linux/lm32/sys/procfs.h b/libc/sysdeps/linux/lm32/sys/procfs.h
-new file mode 100644
-index 0000000..de2833e
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/sys/procfs.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/setjmp.S uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/setjmp.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/setjmp.S	2010-01-23 11:34:05.000000000 +0100
+@@ -0,0 +1,35 @@
++/* Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++/* The function __sigsetjmp_aux saves all the registers, but it can't
++   reliably access the stack or frame pointers, so we pass them in as
++   extra arguments.  */
++
++.text
++.global __sigsetjmp
++.align 2;
++.type __sigsetjmp,@function
++
++__sigsetjmp:
++	mv	r3, sp
++	mv	r4, fp
++
++	bi	__sigsetjmp_aux
++
++	.end	__sigsetjmp
++	.size	__sigsetjmp,.-__sigsetjmp
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/procfs.h uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/procfs.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/procfs.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/procfs.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,111 @@
 +/* Copyright (C) 1996, 1997, 1999, 2001 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1562,11 +1532,9 @@ index 0000000..de2833e
 +__END_DECLS
 +
 +#endif	/* sys/procfs.h */
-diff --git a/libc/sysdeps/linux/lm32/sys/ptrace.h b/libc/sysdeps/linux/lm32/sys/ptrace.h
-new file mode 100644
-index 0000000..be8442c
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/sys/ptrace.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/ptrace.h uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ptrace.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/ptrace.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ptrace.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,151 @@
 +/*
 + * Based on:
@@ -1719,11 +1687,9 @@ index 0000000..be8442c
 +__END_DECLS
 +
 +#endif /* _SYS_PTRACE_H */
-diff --git a/libc/sysdeps/linux/lm32/sys/ucontext.h b/libc/sysdeps/linux/lm32/sys/ucontext.h
-new file mode 100644
-index 0000000..ecffac7
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/sys/ucontext.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/ucontext.h uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ucontext.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/ucontext.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/ucontext.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,128 @@
 +/* Copyright (C) 1998, 1999, 2001, 2006 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1853,11 +1819,9 @@ index 0000000..ecffac7
 +  } ucontext_t;
 +
 +#endif /* sys/ucontext.h */
-diff --git a/libc/sysdeps/linux/lm32/sys/user.h b/libc/sysdeps/linux/lm32/sys/user.h
-new file mode 100644
-index 0000000..f4143e2
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/sys/user.h
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/user.h uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/user.h
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/sys/user.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/sys/user.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,30 @@
 +/* Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -1889,11 +1853,9 @@ index 0000000..f4143e2
 +#define HOST_STACK_END_ADDR	(u.start_stack + u.u_ssize * NBPG)
 +
 +#endif  /* sys/user.h */
-diff --git a/libc/sysdeps/linux/lm32/syscall.c b/libc/sysdeps/linux/lm32/syscall.c
-new file mode 100644
-index 0000000..13c968c
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/syscall.c
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/syscall.c uClibc-0.9.29/libc/sysdeps/linux/lm32/syscall.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/syscall.c	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/syscall.c	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,31 @@
 +#include <features.h>
 +#include <errno.h>
@@ -1926,11 +1888,31 @@ index 0000000..13c968c
 +    }
 +    return (long) __res;
 +}
-diff --git a/libc/sysdeps/linux/lm32/vfork.S b/libc/sysdeps/linux/lm32/vfork.S
-new file mode 100644
-index 0000000..9d87370
---- /dev/null
-+++ b/libc/sysdeps/linux/lm32/vfork.S
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/__syscall_error.c uClibc-0.9.29/libc/sysdeps/linux/lm32/__syscall_error.c
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/__syscall_error.c	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/__syscall_error.c	2010-01-23 11:34:05.000000000 +0100
+@@ -0,0 +1,18 @@
++/* Wrapper for setting errno.
++ *
++ * Copyright (C) 2000-2006 Erik Andersen <andersen@uclibc.org>
++ *
++ * Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
++ */
++
++#include <errno.h>
++#include <features.h>
++
++/* This routine is jumped to by all the syscall handlers, to stash
++ * an error number into errno.  */
++int __syscall_error(int err_no) attribute_hidden;
++int __syscall_error(int err_no)
++{
++	__set_errno(err_no);
++	return -1;
++}
+diff -Naur uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/vfork.S uClibc-0.9.29/libc/sysdeps/linux/lm32/vfork.S
+--- uClibc-0.9.29.orig/libc/sysdeps/linux/lm32/vfork.S	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libc/sysdeps/linux/lm32/vfork.S	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,27 @@
 +#include <features.h>
 +
@@ -1959,11 +1941,9 @@ index 0000000..9d87370
 +.size __vfork,.-__vfork
 +weak_alias(__vfork,vfork)
 +libc_hidden_weak(vfork)
-diff --git a/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h b/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h
-new file mode 100644
-index 0000000..24b7975
---- /dev/null
-+++ b/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h
+diff -Naur uClibc-0.9.29.orig/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h uClibc-0.9.29/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h
+--- uClibc-0.9.29.orig/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/libpthread/linuxthreads.old/sysdeps/lm32/pt-machine.h	2010-01-23 11:34:05.000000000 +0100
 @@ -0,0 +1,61 @@
 +/* Machine-dependent pthreads configuration and inline functions.
 +   nios2 version.
@@ -2026,10 +2006,589 @@ index 0000000..24b7975
 +register char * stack_pointer __asm__ ("sp");
 +
 +#endif /* pt-machine.h */
-diff --git a/utils/ldd.c b/utils/ldd.c
-index 75ad628..5b4ecd2 100644
---- a/utils/ldd.c
-+++ b/utils/ldd.c
+diff -Naur uClibc-0.9.29.orig/Rules.mak uClibc-0.9.29/Rules.mak
+--- uClibc-0.9.29.orig/Rules.mak	2007-04-17 15:34:11.000000000 +0200
++++ uClibc-0.9.29/Rules.mak	2010-01-23 11:46:55.000000000 +0100
+@@ -154,7 +154,11 @@
+ endif
+ 
+ ifeq ($(UCLIBC_FORMAT_FDPIC_ELF),y)
+-	PICFLAG:=-mfdpic
++	ifeq ($(TARGET_ARCH),lm32)
++		PICFLAG:=-fPIC
++	else
++		PICFLAG:=-mfdpic
++	endif
+ else
+ 	PICFLAG:=-fPIC
+ endif
+@@ -241,6 +245,13 @@
+ 	CPU_CFLAGS-y+=-m32
+ endif
+ 
++
++ifeq ($(TARGET_ARCH),lm32)
++## FIXME: revisit & make configurable through options
++	CPU_LDFLAGS-y+=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
++	CPU_CFLAGS-y+=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
++endif
++
+ ifeq ($(TARGET_ARCH),sh)
+ 	OPTIMIZATION+=-fstrict-aliasing
+ 	OPTIMIZATION+= $(call check_gcc,-mprefergot,)
+@@ -410,7 +421,11 @@
+ LDFLAGS:=$(LDFLAGS_NOSTRIP) -z defs
+ ifeq ($(DODEBUG),y)
+ #CFLAGS += -g3
++ifeq ($(TARGET_ARCH),lm32)
++CFLAGS += -O2 -g3
++else
+ CFLAGS += -O0 -g3
++endif
+ else
+ CFLAGS += $(OPTIMIZATION) $(XARCH_CFLAGS)
+ endif
+diff -Naur uClibc-0.9.29.orig/Rules.mak.orig uClibc-0.9.29/Rules.mak.orig
+--- uClibc-0.9.29.orig/Rules.mak.orig	1970-01-01 01:00:00.000000000 +0100
++++ uClibc-0.9.29/Rules.mak.orig	2010-01-23 11:34:05.000000000 +0100
+@@ -0,0 +1,534 @@
++# Rules.make for uClibc
++#
++# Copyright (C) 2000-2006 Erik Andersen <andersen@uclibc.org>
++#
++# Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
++#
++
++# check for proper make version
++ifneq ($(findstring 3.7,$(MAKE_VERSION)),)
++$(error Your make is too old $(MAKE_VERSION). Go get at least 3.80)
++endif
++
++#-----------------------------------------------------------
++# This file contains rules which are shared between multiple
++# Makefiles.  All normal configuration options live in the
++# file named ".config".  Don't mess with this file unless
++# you know what you are doing.
++
++
++#-----------------------------------------------------------
++# If you are running a cross compiler, you will want to set
++# 'CROSS' to something more interesting ...  Target
++# architecture is determined by asking the CC compiler what
++# arch it compiles things for, so unless your compiler is
++# broken, you should not need to specify TARGET_ARCH.
++#
++# Most people will set this stuff on the command line, i.e.
++#        make CROSS=arm-linux-
++# will build uClibc for 'arm'.
++
++ifndef CROSS
++CROSS=
++endif
++CC         = $(CROSS)gcc
++AR         = $(CROSS)ar
++LD         = $(CROSS)ld
++NM         = $(CROSS)nm
++STRIPTOOL  = $(CROSS)strip
++
++INSTALL    = install
++LN         = ln
++RM         = rm -f
++TAR        = tar
++
++STRIP_FLAGS ?= -x -R .note -R .comment
++
++# Select the compiler needed to build binaries for your development system
++HOSTCC     = gcc
++BUILD_CFLAGS = -O2 -Wall
++export ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun.*/sparc/ -e s/sparc.*/sparc/ \
++				  -e s/arm.*/arm/ -e s/sa110/arm/ -e s/sh.*/sh/ \
++				  -e s/s390x/s390/ -e s/parisc.*/hppa/ \
++				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ )
++
++
++#---------------------------------------------------------
++# Nothing beyond this point should ever be touched by mere
++# mortals.  Unless you hang out with the gods, you should
++# probably leave all this stuff alone.
++
++# Pull in the user's uClibc configuration
++ifeq ($(filter $(noconfig_targets),$(MAKECMDGOALS)),)
++-include $(top_builddir).config
++endif
++
++# Make certain these contain a final "/", but no "//"s.
++TARGET_ARCH:=$(shell grep -s '^TARGET_ARCH' $(top_builddir)/.config | sed -e 's/^TARGET_ARCH=//' -e 's/"//g')
++TARGET_ARCH:=$(strip $(subst ",, $(strip $(TARGET_ARCH))))
++TARGET_SUBARCH:=$(shell grep -s '^TARGET_SUBARCH' $(top_builddir)/.config | sed -e 's/^TARGET_SUBARCH=//' -e 's/"//g')
++TARGET_SUBARCH:=$(strip $(subst ",, $(strip $(TARGET_SUBARCH))))
++RUNTIME_PREFIX:=$(strip $(subst //,/, $(subst ,/, $(subst ",, $(strip $(RUNTIME_PREFIX))))))
++DEVEL_PREFIX:=$(strip $(subst //,/, $(subst ,/, $(subst ",, $(strip $(DEVEL_PREFIX))))))
++KERNEL_HEADERS:=$(strip $(subst //,/, $(subst ,/, $(subst ",, $(strip $(KERNEL_HEADERS))))))
++export RUNTIME_PREFIX DEVEL_PREFIX KERNEL_HEADERS
++
++
++# Now config hard core
++MAJOR_VERSION := 0
++MINOR_VERSION := 9
++SUBLEVEL      := 29
++EXTRAVERSION  :=
++VERSION       := $(MAJOR_VERSION).$(MINOR_VERSION).$(SUBLEVEL)
++ifneq ($(EXTRAVERSION),)
++VERSION       := $(VERSION)$(EXTRAVERSION)
++endif
++# Ensure consistent sort order, 'gcc -print-search-dirs' behavior, etc.
++LC_ALL := C
++export MAJOR_VERSION MINOR_VERSION SUBLEVEL VERSION LC_ALL
++
++LIBC := libc
++SHARED_MAJORNAME := $(LIBC).so.$(MAJOR_VERSION)
++ifneq ($(findstring  $(TARGET_ARCH) , hppa64 ia64 mips64 powerpc64 s390x sh64 sparc64 x86_64 ),)
++UCLIBC_LDSO_NAME := ld64-uClibc
++else
++UCLIBC_LDSO_NAME := ld-uClibc
++endif
++UCLIBC_LDSO := $(UCLIBC_LDSO_NAME).so.$(MAJOR_VERSION)
++NONSHARED_LIBNAME := uclibc_nonshared.a
++libc := $(top_builddir)lib/$(SHARED_MAJORNAME)
++interp := $(top_builddir)lib/interp.os
++ldso := $(top_builddir)lib/$(UCLIBC_LDSO)
++headers_dep := $(top_builddir)include/bits/sysnum.h
++sub_headers := $(headers_dep)
++
++#LIBS :=$(interp) -L$(top_builddir)lib -lc
++LIBS := $(interp) -L$(top_builddir)lib $(libc:.$(MAJOR_VERSION)=)
++
++# Make sure DESTDIR and PREFIX can be used to install
++# PREFIX is a uClibcism while DESTDIR is a common GNUism
++ifndef PREFIX
++PREFIX = $(DESTDIR)
++endif
++
++ifneq ($(HAVE_SHARED),y)
++libc :=
++interp :=
++ldso :=
++endif
++
++ifndef CROSS
++CROSS=$(subst ",, $(strip $(CROSS_COMPILER_PREFIX)))
++endif
++
++# A nifty macro to make testing gcc features easier
++check_gcc=$(shell \
++	if $(CC) $(1) -S -o /dev/null -xc /dev/null > /dev/null 2>&1; \
++	then echo "$(1)"; else echo "$(2)"; fi)
++check_as=$(shell \
++	if $(CC) -Wa,$(1) -Wa,-Z -c -o /dev/null -xassembler /dev/null > /dev/null 2>&1; \
++	then echo "-Wa,$(1)"; fi)
++check_ld=$(shell \
++	if $(LD) $(1) -o /dev/null -b binary /dev/null > /dev/null 2>&1; \
++	then echo "$(1)"; fi)
++
++ARFLAGS:=cr
++
++OPTIMIZATION:=
++# Use '-Os' optimization if available, else use -O2, allow Config to override
++OPTIMIZATION+=$(call check_gcc,-Os,-O2)
++# Use the gcc 3.4 -funit-at-a-time optimization when available
++OPTIMIZATION+=$(call check_gcc,-funit-at-a-time,)
++
++GCC_MAJOR_VER?=$(shell $(CC) -dumpversion | cut -d . -f 1)
++#GCC_MINOR_VER?=$(shell $(CC) -dumpversion | cut -d . -f 2)
++
++ifeq ($(GCC_MAJOR_VER),4)
++# shrinks code, results are from 4.0.2
++# 0.36%
++OPTIMIZATION+=$(call check_gcc,-fno-tree-loop-optimize,)
++# 0.34%
++OPTIMIZATION+=$(call check_gcc,-fno-tree-dominator-opts,)
++# 0.1%
++OPTIMIZATION+=$(call check_gcc,-fno-strength-reduce,)
++endif
++
++ifeq ($(UCLIBC_FORMAT_FDPIC_ELF),y)
++	ifeq ($(TARGET_ARCH),lm32)
++		PICFLAG:=
++	else
++		PICFLAG:=-mfdpic
++	endif
++else
++	PICFLAG:=-fPIC
++endif
++PIEFLAG_NAME:=-fPIE
++
++# Some nice CPU specific optimizations
++ifeq ($(TARGET_ARCH),i386)
++	OPTIMIZATION+=$(call check_gcc,-mpreferred-stack-boundary=2,)
++	OPTIMIZATION+=$(call check_gcc,-falign-jumps=0 -falign-loops=0,-malign-jumps=0 -malign-loops=0)
++	CPU_CFLAGS-$(CONFIG_386)+=-march=i386
++	CPU_CFLAGS-$(CONFIG_486)+=-march=i486
++	CPU_CFLAGS-$(CONFIG_ELAN)+=-march=i486
++	CPU_CFLAGS-$(CONFIG_586)+=-march=i586
++	CPU_CFLAGS-$(CONFIG_586MMX)+=$(call check_gcc,-march=pentium-mmx,-march=i586)
++	CPU_CFLAGS-$(CONFIG_686)+=-march=i686
++	CPU_CFLAGS-$(CONFIG_PENTIUMII)+=$(call check_gcc,-march=pentium2,-march=i686)
++	CPU_CFLAGS-$(CONFIG_PENTIUMIII)+=$(call check_gcc,-march=pentium3,-march=i686)
++	CPU_CFLAGS-$(CONFIG_PENTIUM4)+=$(call check_gcc,-march=pentium4,-march=i686)
++	CPU_CFLAGS-$(CONFIG_K6)+=$(call check_gcc,-march=k6,-march=i586)
++	CPU_CFLAGS-$(CONFIG_K7)+=$(call check_gcc,-march=athlon,-march=i686) $(call check_gcc,-falign-functions=4,-malign-functions=4)
++	CPU_CFLAGS-$(CONFIG_CRUSOE)+=-march=i686 $(call check_gcc,-falign-functions=0,-malign-functions=0)
++	CPU_CFLAGS-$(CONFIG_WINCHIPC6)+=$(call check_gcc,-march=winchip-c6,-march=i586)
++	CPU_CFLAGS-$(CONFIG_WINCHIP2)+=$(call check_gcc,-march=winchip2,-march=i586)
++	CPU_CFLAGS-$(CONFIG_CYRIXIII)+=$(call check_gcc,-march=c3,-march=i486) $(call check_gcc,-falign-functions=0,-malign-functions=0)
++	CPU_CFLAGS-$(CONFIG_NEHEMIAH)+=$(call check_gcc,-march=c3-2,-march=i686)
++endif
++
++ifeq ($(TARGET_ARCH),sparc)
++	CPU_CFLAGS-$(CONFIG_SPARC_V7)+=-mcpu=v7
++	CPU_CFLAGS-$(CONFIG_SPARC_V8)+=-mcpu=v8
++	CPU_CFLAGS-$(CONFIG_SPARC_V9)+=-mcpu=v9
++	CPU_CFLAGS-$(CONFIG_SPARC_V9B)+=$(call check_gcc,-mcpu=v9b,-mcpu=ultrasparc)
++endif
++
++ifeq ($(TARGET_ARCH),arm)
++	OPTIMIZATION+=-fstrict-aliasing
++	CPU_LDFLAGS-$(ARCH_LITTLE_ENDIAN)+=-EL
++	CPU_LDFLAGS-$(ARCH_BIG_ENDIAN)+=-EB
++	CPU_CFLAGS-$(ARCH_LITTLE_ENDIAN)+=-mlittle-endian
++	CPU_CFLAGS-$(ARCH_BIG_ENDIAN)+=-mbig-endian
++	CPU_CFLAGS-$(CONFIG_GENERIC_ARM)+=
++	CPU_CFLAGS-$(CONFIG_ARM610)+=-mtune=arm610 -march=armv3
++	CPU_CFLAGS-$(CONFIG_ARM710)+=-mtune=arm710 -march=armv3
++	CPU_CFLAGS-$(CONFIG_ARM7TDMI)+=-mtune=arm7tdmi -march=armv4t
++	CPU_CFLAGS-$(CONFIG_ARM720T)+=-mtune=arm7tdmi -march=armv4t
++	CPU_CFLAGS-$(CONFIG_ARM920T)+=-mtune=arm9tdmi -march=armv4t
++	CPU_CFLAGS-$(CONFIG_ARM922T)+=-mtune=arm9tdmi -march=armv4t
++	CPU_CFLAGS-$(CONFIG_ARM926T)+=-mtune=arm9tdmi -march=armv5t
++	CPU_CFLAGS-$(CONFIG_ARM10T)+=-mtune=arm10tdmi -march=armv5t
++	CPU_CFLAGS-$(CONFIG_ARM1136JF_S)+=-mtune=arm1136jf-s -march=armv6
++	CPU_CFLAGS-$(CONFIG_ARM1176JZ_S)+=-mtune=arm1176jz-s -march=armv6
++	CPU_CFLAGS-$(CONFIG_ARM1176JZF_S)+=-mtune=arm1176jzf-s -march=armv6
++	CPU_CFLAGS-$(CONFIG_ARM_SA110)+=-mtune=strongarm110 -march=armv4
++	CPU_CFLAGS-$(CONFIG_ARM_SA1100)+=-mtune=strongarm1100 -march=armv4
++	CPU_CFLAGS-$(CONFIG_ARM_XSCALE)+=$(call check_gcc,-mtune=xscale,-mtune=strongarm110)
++	CPU_CFLAGS-$(CONFIG_ARM_XSCALE)+=-march=armv5te -Wa,-mcpu=xscale
++ 	CPU_CFLAGS-$(CONFIG_ARM_IWMMXT)+=-march=iwmmxt -Wa,-mcpu=iwmmxt -mabi=iwmmxt
++endif
++
++ifeq ($(TARGET_ARCH),mips)
++	CPU_LDFLAGS-$(ARCH_LITTLE_ENDIAN)+=-EL
++	CPU_LDFLAGS-$(ARCH_BIG_ENDIAN)+=-EB
++	CPU_CFLAGS-$(CONFIG_MIPS_ISA_1)+=-mips1
++	CPU_CFLAGS-$(CONFIG_MIPS_ISA_2)+=-mips2 -mtune=mips2
++	CPU_CFLAGS-$(CONFIG_MIPS_ISA_3)+=-mips3 -mtune=mips3
++	CPU_CFLAGS-$(CONFIG_MIPS_ISA_4)+=-mips4 -mtune=mips4
++	CPU_CFLAGS-$(CONFIG_MIPS_ISA_MIPS32)+=-mips32 -mtune=mips32
++	CPU_CFLAGS-$(CONFIG_MIPS_ISA_MIPS64)+=-mips64 -mtune=mips32
++	ifeq ($(strip $(ARCH_BIG_ENDIAN)),y)
++		CPU_LDFLAGS-$(CONFIG_MIPS_N64_ABI)+=-melf64btsmip
++		CPU_LDFLAGS-$(CONFIG_MIPS_O32_ABI)+=-melf32btsmip
++	endif
++	ifeq ($(strip $(ARCH_LITTLE_ENDIAN)),y)
++		CPU_LDFLAGS-$(CONFIG_MIPS_N64_ABI)+=-melf64ltsmip
++		CPU_LDFLAGS-$(CONFIG_MIPS_O32_ABI)+=-melf32ltsmip
++	endif
++	CPU_CFLAGS-$(CONFIG_MIPS_N64_ABI)+=-mabi=64
++	CPU_CFLAGS-$(CONFIG_MIPS_O32_ABI)+=-mabi=32
++	CPU_CFLAGS-$(CONFIG_MIPS_N32_ABI)+=-mabi=n32
++endif
++
++ifeq ($(TARGET_ARCH),nios)
++	CPU_LDFLAGS-y+=-m32
++	CPU_CFLAGS-y+=-m32
++endif
++
++
++ifeq ($(TARGET_ARCH),lm32)
++## FIXME: revisit & make configurable through options
++	CPU_LDFLAGS-y+=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
++	CPU_CFLAGS-y+=-mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
++endif
++
++ifeq ($(TARGET_ARCH),sh)
++	OPTIMIZATION+=-fstrict-aliasing
++	OPTIMIZATION+= $(call check_gcc,-mprefergot,)
++	CPU_LDFLAGS-$(ARCH_LITTLE_ENDIAN)+=-EL
++	CPU_LDFLAGS-$(ARCH_BIG_ENDIAN)+=-EB
++	CPU_CFLAGS-$(ARCH_LITTLE_ENDIAN)+=-ml
++	CPU_CFLAGS-$(ARCH_BIG_ENDIAN)+=-mb
++	CPU_CFLAGS-$(CONFIG_SH2)+=-m2
++	CPU_CFLAGS-$(CONFIG_SH3)+=-m3
++ifeq ($(UCLIBC_HAS_FLOATS),y)
++	CPU_CFLAGS-$(CONFIG_SH2A)+=-m2a
++	CPU_CFLAGS-$(CONFIG_SH4)+=-m4
++else
++	CPU_CFLAGS-$(CONFIG_SH2A)+=-m2a-nofpu
++	CPU_CFLAGS-$(CONFIG_SH4)+=-m4-nofpu
++endif
++endif
++
++ifeq ($(TARGET_ARCH),sh64)
++	OPTIMIZATION+=-fstrict-aliasing
++	CPU_LDFLAGS-$(ARCH_LITTLE_ENDIAN):=-EL
++	CPU_LDFLAGS-$(ARCH_BIG_ENDIAN):=-EB
++	CPU_CFLAGS-$(ARCH_LITTLE_ENDIAN):=-ml
++	CPU_CFLAGS-$(ARCH_BIG_ENDIAN):=-mb
++	CPU_CFLAGS-$(CONFIG_SH5)+=-m5-32media
++endif
++
++ifeq ($(TARGET_ARCH),h8300)
++	CPU_LDFLAGS-$(CONFIG_H8300H)+= -ms8300h
++	CPU_LDFLAGS-$(CONFIG_H8S)   += -ms8300s
++	CPU_CFLAGS-$(CONFIG_H8300H) += -mh -mint32
++	CPU_CFLAGS-$(CONFIG_H8S)    += -ms -mint32
++endif
++
++ifeq ($(TARGET_ARCH),cris)
++	CPU_LDFLAGS-$(CONFIG_CRIS)+=-mcrislinux
++	CPU_LDFLAGS-$(CONFIG_CRISV32)+=-mcrislinux
++	CPU_CFLAGS-$(CONFIG_CRIS)+=-mlinux
++	PICFLAG:=-fpic
++	PIEFLAG_NAME:=-fpie
++endif
++
++ifeq ($(TARGET_ARCH),m68k)
++	# -fPIC is only supported for 68020 and above.  It is not supported
++	# for 68000, 68010, or Coldfire.
++	PICFLAG:=-fpic
++	PIEFLAG_NAME:=-fpie
++endif
++
++ifeq ($(TARGET_ARCH),powerpc)
++# PowerPC can hold 8192 entries in its GOT with -fpic which is more than
++# enough. Therefore use -fpic which will reduce code size and generates
++# faster code.
++	PICFLAG:=-fpic
++	PIEFLAG_NAME:=-fpie
++	PPC_HAS_REL16:=$(shell echo -e "\t.text\n\taddis 11,30,_GLOBAL_OFFSET_TABLE_-.@ha" | $(CC) -c -x assembler -o /dev/null -  2> /dev/null && echo -n y || echo -n n)
++	CPU_CFLAGS-$(PPC_HAS_REL16)+= -DHAVE_ASM_PPC_REL16
++	CPU_CFLAGS-$(CONFIG_E500) += "-D__NO_MATH_INLINES -D__NO_LONG_DOUBLE_MATH"
++
++endif
++
++ifeq ($(TARGET_ARCH),frv)
++	CPU_LDFLAGS-$(CONFIG_FRV)+=-melf32frvfd
++	# Using -pie causes the program to have an interpreter, which is
++	# forbidden, so we must make do with -shared.  Unfortunately,
++	# -shared by itself would get us global function descriptors
++	# and calls through PLTs, dynamic resolution of symbols, etc,
++	# which would break as well, but -Bsymbolic comes to the rescue.
++	export LDPIEFLAG:=-shared -Bsymbolic
++	UCLIBC_LDSO=ld.so.1
++endif
++
++# Keep the check_gcc from being needlessly executed
++ifndef PIEFLAG
++ifneq ($(UCLIBC_BUILD_PIE),y)
++export PIEFLAG:=
++else
++export PIEFLAG:=$(call check_gcc,$(PIEFLAG_NAME),$(PICFLAG))
++endif
++endif
++# We need to keep track of both the CC PIE flag (above) as
++# well as the LD PIE flag (below) because we can't rely on
++# gcc passing -pie if we used -fPIE
++ifndef LDPIEFLAG
++ifneq ($(UCLIBC_BUILD_PIE),y)
++export LDPIEFLAG:=
++else
++export LDPIEFLAG:=$(shell $(LD) --help 2>/dev/null | grep -q -- -pie && echo "-Wl,-pie")
++endif
++endif
++
++# Check for AS_NEEDED support in linker script (binutils>=2.16.1 has it)
++ifndef ASNEEDED
++ifneq ($(UCLIBC_HAS_SSP),y)
++export ASNEEDED:=
++else
++export ASNEEDED:=$(shell (LD_TMP=$(mktemp LD_XXXXXX) ; echo "GROUP ( AS_NEEDED ( /usr/lib/libc.so ) )" > $LD_TMP && if $(LD) -T $LD_TMP -o /dev/null > /dev/null 2>&1; then echo "AS_NEEDED ( $(UCLIBC_LDSO) )"; else echo "$(UCLIBC_LDSO)"; fi; rm -f $LD_TMP ) )
++endif
++endif
++
++# Add a bunch of extra pedantic annoyingly strict checks
++XWARNINGS=$(subst ",, $(strip $(WARNINGS))) -Wstrict-prototypes -fno-strict-aliasing
++ifeq ($(EXTRA_WARNINGS),y)
++XWARNINGS+=-Wnested-externs -Wshadow -Wmissing-noreturn -Wmissing-format-attribute -Wformat=2
++XWARNINGS+=-Wmissing-prototypes -Wmissing-declarations
++XWARNINGS+=-Wnonnull -Wundef
++# works only w/ gcc-3.4 and up, can't be checked for gcc-3.x w/ check_gcc()
++#XWARNINGS+=-Wdeclaration-after-statement
++endif
++XARCH_CFLAGS=$(subst ",, $(strip $(ARCH_CFLAGS)))
++CPU_CFLAGS=$(subst ",, $(strip $(CPU_CFLAGS-y)))
++
++SSP_DISABLE_FLAGS ?= $(call check_gcc,-fno-stack-protector,)
++ifeq ($(UCLIBC_BUILD_SSP),y)
++SSP_CFLAGS := $(call check_gcc,-fno-stack-protector-all,)
++SSP_CFLAGS += $(call check_gcc,-fstack-protector,)
++SSP_ALL_CFLAGS ?= $(call check_gcc,-fstack-protector-all,)
++else
++SSP_CFLAGS := $(SSP_DISABLE_FLAGS)
++endif
++
++# Some nice CFLAGS to work with
++CFLAGS := -include $(top_builddir)include/libc-symbols.h \
++	$(XWARNINGS) $(CPU_CFLAGS) $(SSP_CFLAGS) \
++	-fno-builtin -nostdinc -I$(top_builddir)include -I.
++
++ifneq ($(strip $(UCLIBC_EXTRA_CFLAGS)),"")
++CFLAGS += $(subst ",, $(UCLIBC_EXTRA_CFLAGS))
++endif
++
++LDADD_LIBFLOAT=
++ifeq ($(UCLIBC_HAS_SOFT_FLOAT),y)
++# If -msoft-float isn't supported, we want an error anyway.
++# Hmm... might need to revisit this for arm since it has 2 different
++# soft float encodings.
++ifneq ($(TARGET_ARCH),nios)
++ifneq ($(TARGET_ARCH),nios2)
++CFLAGS += -msoft-float
++endif
++endif
++ifeq ($(TARGET_ARCH),arm)
++# No longer needed with current toolchains, but leave it here for now.
++# If anyone is actually still using gcc 2.95 (say), they can uncomment it.
++#    LDADD_LIBFLOAT=-lfloat
++endif
++endif
++
++# We need this to be checked within libc-symbols.h
++ifneq ($(HAVE_SHARED),y)
++CFLAGS += -DSTATIC
++endif
++
++CFLAGS += $(call check_gcc,-std=gnu99,)
++
++LDFLAGS_NOSTRIP:=$(CPU_LDFLAGS-y) -shared --warn-common --warn-once -z combreloc
++# binutils-2.16.1 warns about ignored sections, 2.16.91.0.3 and newer are ok
++#LDFLAGS_NOSTRIP+=$(call check_ld,--gc-sections)
++
++ifeq ($(UCLIBC_BUILD_RELRO),y)
++LDFLAGS_NOSTRIP+=-z relro
++endif
++
++ifeq ($(UCLIBC_BUILD_NOW),y)
++LDFLAGS_NOSTRIP+=-z now
++endif
++
++LDFLAGS:=$(LDFLAGS_NOSTRIP) -z defs
++ifeq ($(DODEBUG),y)
++#CFLAGS += -g3
++ifeq ($(TARGET_ARCH),lm32)
++CFLAGS += -O2 -g3
++else
++CFLAGS += -O0 -g3
++endif
++else
++CFLAGS += $(OPTIMIZATION) $(XARCH_CFLAGS)
++endif
++ifeq ($(DOSTRIP),y)
++LDFLAGS += -s
++else
++STRIPTOOL := true -Stripping_disabled
++endif
++
++ifeq ($(DOMULTI),y)
++# we try to compile all sources at once into an object (IMA), but
++# gcc-3.3.x does not support it
++# gcc-3.4.x supports it, but does not need and support --combine. though fails on many sources
++# gcc-4.0.x supports it, supports the --combine flag, but does not need it
++# gcc-4.1(200506xx) supports it, but needs the --combine flag, else libs are useless
++ifeq ($(GCC_MAJOR_VER),3)
++DOMULTI:=n
++else
++CFLAGS+=$(call check_gcc,--combine,)
++endif
++else
++DOMULTI:=n
++endif
++
++ifeq ($(UCLIBC_HAS_THREADS),y)
++ifeq ($(UCLIBC_HAS_THREADS_NATIVE),y)
++	PTNAME := nptl
++else
++ifeq ($(LINUXTHREADS_OLD),y)
++	PTNAME := linuxthreads.old
++else
++	PTNAME := linuxthreads
++endif
++endif
++PTDIR := $(top_builddir)libpthread/$(PTNAME)
++# set up system dependencies include dirs (NOTE: order matters!)
++ifeq ($(UCLIBC_HAS_THREADS_NATIVE),y)
++PTINC:=	-I$(PTDIR)						\
++	-I$(PTDIR)/sysdeps/unix/sysv/linux/$(TARGET_ARCH)	\
++	-I$(PTDIR)/sysdeps/$(TARGET_ARCH)			\
++	-I$(PTDIR)/sysdeps/unix/sysv/linux			\
++	-I$(PTDIR)/sysdeps/pthread				\
++	-I$(PTDIR)/sysdeps/pthread/bits				\
++	-I$(PTDIR)/sysdeps/generic				\
++	-I$(top_srcdir)ldso/ldso/$(TARGET_ARCH)			\
++	-I$(top_srcdir)ldso/include
++#
++# Test for TLS if NPTL support was selected.
++#
++GCC_HAS_TLS=$(shell \
++	echo "extern __thread int foo;" | $(CC) -o /dev/null -S -xc - 2>&1)
++ifneq ($(GCC_HAS_TLS),)
++gcc_tls_test_fail:
++	@echo "####";
++	@echo "#### Your compiler does not support TLS and you are trying to build uClibc";
++	@echo "#### with NPTL support. Upgrade your binutils and gcc to versions which";
++	@echo "#### support TLS for your architecture. Do not contact uClibc maintainers";
++	@echo "#### about this problem.";
++	@echo "####";
++	@echo "#### Exiting...";
++	@echo "####";
++	@exit 1;
++endif
++else
++PTINC := \
++	-I$(PTDIR)/sysdeps/unix/sysv/linux/$(TARGET_ARCH) \
++	-I$(PTDIR)/sysdeps/$(TARGET_ARCH) \
++	-I$(PTDIR)/sysdeps/unix/sysv/linux \
++	-I$(PTDIR)/sysdeps/pthread \
++	-I$(PTDIR) \
++	-I$(top_builddir)libpthread
++endif
++CFLAGS+=$(PTINC)
++else
++	PTNAME :=
++	PTINC  :=
++endif
++CFLAGS += -I$(KERNEL_HEADERS)
++
++# Sigh, some stupid versions of gcc can't seem to cope with '-iwithprefix include'
++#CFLAGS+=-iwithprefix include
++CFLAGS+=-isystem $(shell $(CC) -print-file-name=include)
++
++ifneq ($(DOASSERTS),y)
++CFLAGS+=-DNDEBUG
++endif
++
++# Keep the check_as from being needlessly executed
++ifndef ASFLAGS_NOEXEC
++ifeq ($(UCLIBC_BUILD_NOEXECSTACK),y)
++export ASFLAGS_NOEXEC := $(call check_as,--noexecstack)
++else
++export ASFLAGS_NOEXEC :=
++endif
++endif
++ASFLAGS = $(ASFLAGS_NOEXEC)
++
++LIBGCC_CFLAGS ?= $(CFLAGS) $(CPU_CFLAGS-y)
++LIBGCC:=$(shell $(CC) $(LIBGCC_CFLAGS) -print-libgcc-file-name)
++LIBGCC_DIR:=$(dir $(LIBGCC))
++
++# moved from libpthread/linuxthreads
++ifeq ($(UCLIBC_CTOR_DTOR),y)
++SHARED_START_FILES:=$(top_builddir)lib/crti.o $(LIBGCC_DIR)crtbeginS.o
++SHARED_END_FILES:=$(LIBGCC_DIR)crtendS.o $(top_builddir)lib/crtn.o
++endif
+diff -Naur uClibc-0.9.29.orig/utils/ldd.c uClibc-0.9.29/utils/ldd.c
+--- uClibc-0.9.29.orig/utils/ldd.c	2007-04-18 00:31:01.000000000 +0200
++++ uClibc-0.9.29/utils/ldd.c	2010-01-23 11:34:05.000000000 +0100
 @@ -72,6 +72,11 @@
  #define ELFCLASSM	ELFCLASS64
  #endif
@@ -2042,11 +2601,10 @@ index 75ad628..5b4ecd2 100644
  #if defined(__mc68000__)
  #define MATCH_MACHINE(x) (x == EM_68K)
  #define ELFCLASSM	ELFCLASS32
-diff --git a/utils/readelf.c b/utils/readelf.c
-index 0ff5d25..3316e9b 100644
---- a/utils/readelf.c
-+++ b/utils/readelf.c
-@@ -245,6 +245,7 @@ static void describe_elf_hdr(ElfW(Ehdr)* ehdr)
+diff -Naur uClibc-0.9.29.orig/utils/readelf.c uClibc-0.9.29/utils/readelf.c
+--- uClibc-0.9.29.orig/utils/readelf.c	2006-10-07 08:01:37.000000000 +0200
++++ uClibc-0.9.29/utils/readelf.c	2010-01-23 11:34:05.000000000 +0100
+@@ -245,6 +245,7 @@
  		case EM_ALTERA_NIOS2:	tmp="Altera Nios II"; break;
  		case EM_VPP500:		tmp="Fujitsu VPP500"; break;
  		case EM_PDSP:		tmp="Sony DSP Processor"; break;
