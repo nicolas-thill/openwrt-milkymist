@@ -5247,28 +5247,6 @@ index a59a884..f923c97 100644
  DISCARDED="/DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) }"
  if test -z "${NO_SMALL_DATA}"; then
    SBSS=".sbss         ${RELOCATING-0} :
-@@ -246,12 +257,6 @@
-    test -z "${TEXT_BASE_ADDRESS}" && TEXT_BASE_ADDRESS="${TEXT_START_ADDR}"
- fi
- 
--if test "$LD_FLAG" = "r"; then 
--	DATA_REL=".data.rel : { *(.data.rel) }"
--else
--	DATA_REL=" __data_rel_start = .; .data.rel : { *(.data.rel) } __data_rel_end = .;"
--fi
--
- cat <<EOF
- OUTPUT_FORMAT("${OUTPUT_FORMAT}", "${BIG_OUTPUT_FORMAT}",
- 	      "${LITTLE_OUTPUT_FORMAT}")
-@@ -429,8 +434,6 @@
- 
-   ${DATA_PLT+${PLT_BEFORE_GOT-${PLT}}}
- 
--	${DATA_REL}
--
-   .data         ${RELOCATING-0} :
-   {
-     ${RELOCATING+${DATA_START_SYMBOLS}}
 diff --git a/ld/testsuite/ld-elf/merge.d b/ld/testsuite/ld-elf/merge.d
 index bc5a7b2..ed3dfc9 100644
 --- a/ld/testsuite/ld-elf/merge.d
