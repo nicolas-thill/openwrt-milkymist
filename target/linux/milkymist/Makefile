@@ -18,7 +18,7 @@ LINUX_VERSION:=2.6.23
 
 include $(INCLUDE_DIR)/target.mk
 
-CFLAGS:=-O2 -pipe  -funit-at-a-time -mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled
+CFLAGS:=-O2 -pipe -funit-at-a-time -mmultiply-enabled -mdivide-enabled -mbarrel-shift-enabled -msign-extend-enabled -fPIC
 
 DEFAULT_PACKAGES:= \
 	base-files \

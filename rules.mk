@@ -174,7 +174,7 @@ ifneq ($(CONFIG_NO_STRIP),)
   STRIP:=:
 else
   ifneq ($(CONFIG_USE_STRIP),)
-    STRIP:=$(TARGET_CROSS)strip $(call qstrip,$(CONFIG_STRIP_ARGS))
+    STRIP:=$(TARGET_CROSS)strip
   else
     ifneq ($(CONFIG_USE_SSTRIP),)
       STRIP:=$(STAGING_DIR_HOST)/bin/sstrip

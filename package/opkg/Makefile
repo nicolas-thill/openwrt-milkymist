@@ -51,8 +51,7 @@ CONFIGURE_ARGS += \
 
 ifneq ($(CONFIG_lm32),)
   CONFIGURE_VARS += \
-	CPPFLAGS="$(TARGET_CPPFLAGS) -D__uClinux__" \
-	LDFLAGS="$(TARGET_LDFLAGS) -Wl,-q"
+	CPPFLAGS="$(TARGET_CPPFLAGS) -D__uClinux__"
 endif
 
 define Build/Configure
